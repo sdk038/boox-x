@@ -9,6 +9,7 @@ const AdminPanel = () => {
   const [users, setUsers] = useState([]);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line no-unused-vars
   const [selectedUser, setSelectedUser] = useState(null);
   const { user } = useAuth();
 

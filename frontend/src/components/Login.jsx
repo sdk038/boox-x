@@ -52,7 +52,7 @@ const LoginForm = ({ onSuccess }) => {
           required
           minLength="6"
         />
-        <a href="#" className="forgot-password">Forgot your password?</a>
+        <a href="/" onClick={(e) => e.preventDefault()} className="forgot-password">Forgot your password?</a>
         <button className="form-button" type="submit">SIGN IN</button>
       </form>
     </div>
