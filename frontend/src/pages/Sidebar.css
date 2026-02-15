@@ -1,0 +1,275 @@
+.sidebar {
+  --color-primary: #4066ff;
+  position: fixed;
+  overflow: hidden;
+  top: 0px;
+  left: 0px;
+  bottom: 0px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100vh;
+  width: 90px;
+  border-radius: 1px;
+  transition: width 0.4s ease;
+  z-index: 1000;
+}
+
+.left, .right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transition: 0.4s;
+  border-radius: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Левая часть */
+.left {
+  z-index: 1;
+  left: 0;
+  width: 80px;
+  background: #151617;
+}
+
+.left .avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4066ff, #3c23c9);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  margin: 34px 0 40px;
+}
+
+.left img {
+  width: 40px;
+  margin: 34px 0 40px;
+}
+
+.left button {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 18px;
+  display: grid;
+  place-items: center;
+  background: #33363a;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.left button:last-of-type {
+  margin-bottom: 20px;
+}
+
+.left .logout-btn {
+  margin-top: auto;
+  background: #d32f2f !important;
+  transition: all 0.3s;
+}
+
+.left .logout-btn:hover {
+  background: #b71c1c !important;
+  transform: scale(1.05);
+}
+
+/* Правая часть */
+.right {
+  left: 80px;
+  width: 220px;
+  background: #1d1f20;
+  translate: -100% 0;
+}
+
+.right-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  padding: 32px 16px 0 16px;
+  margin-bottom: 24px;
+}
+
+.header-text {
+  flex: 1;
+  padding-left: 42px;
+}
+
+.right h1 {
+  color: #f9f9f9;
+  letter-spacing: 2px;
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0 0 12px 0;
+}
+
+.right .user-name {
+  color: #adb0bc;
+  font-size: 14px;
+  margin: 0;
+}
+
+.pin-button {
+  background: transparent;
+  border: 2px solid transparent;
+  color: #adb0bc;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  margin-top: -4px;
+}
+
+.pin-button:hover {
+  background: #353739;
+  color: #f9f9f9;
+  border-color: #4066ff;
+}
+
+.pin-button.active {
+  background: var(--color-primary);
+  color: white;
+  transform: rotate(45deg);
+  border-color: var(--color-primary);
+}
+
+.pin-button.active:hover {
+  background: #3552d1;
+  border-color: #3552d1;
+}
+
+.right .buttons {
+  display: grid;
+  width: 100%;
+  padding: 16px;
+  gap: 16px;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.right button {
+  padding: 8px 8px;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  cursor: pointer;
+  color: #adb0bc;
+}
+
+.right button i {
+  background: #353739;
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  font-size: 22px;
+  display: grid;
+  place-items: center;
+  transition: background 0.3s;
+}
+
+/* Состояния Hover и Pinned */
+.sidebar:hover,
+.sidebar.pinned {
+  width: 300px;
+}
+
+.sidebar:hover .left,
+.sidebar.pinned .left {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.sidebar:hover .right,
+.sidebar.pinned .right {
+  translate: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.right button:hover {
+  color: #f9f9f9;
+}
+
+.right button:hover i {
+  background: var(--color-primary);
+}
+.left .bottom-btn {
+  margin-top: auto;
+  margin-bottom: 100px;
+}
+
+
+.left button.active {
+  background: var(--color-primary) !important;
+  color: white;
+}
+
+
+.right button.active i {
+  background: var(--color-primary);
+}
+
+.right button.active span {
+  color: #f9f9f9;
+}
+
+/* ================================== */
+/* ===== DARK THEME — Sidebar ======= */
+/* ================================== */
+body.dark-theme .left {
+  background: #0d0d0d;
+}
+
+body.dark-theme .left button {
+  background: #252525;
+}
+
+body.dark-theme .right {
+  background: #161616;
+}
+
+body.dark-theme .right h1 {
+  color: #f0f0f0;
+}
+
+body.dark-theme .right .user-name {
+  color: #888;
+}
+
+body.dark-theme .right button {
+  color: #888;
+}
+
+body.dark-theme .right button i {
+  background: #252525;
+}
+
+body.dark-theme .right button:hover {
+  color: #f0f0f0;
+}
+
+body.dark-theme .right button:hover i {
+  background: var(--color-primary);
+}
+
+body.dark-theme .pin-button {
+  color: #888;
+}
+
+body.dark-theme .pin-button:hover {
+  background: #252525;
+  color: #f0f0f0;
+}

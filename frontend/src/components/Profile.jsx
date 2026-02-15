@@ -1,0 +1,249 @@
+import React, { useState } from 'react';
+import { authAPI } from '../services/api';
+
+const Profile = ({ user }) => {
+  const [editMode, setEditMode] = useState(false);
+  const [profileData, setProfileData] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    bio: user?.bio || 'Расскажите о себе...',
+    location: user?.location || '',
+    phone: user?.phone || ''
+  });
+  const [saveStatus, setSaveStatus] = useState('');
+
+  const handleSave = async () => {
+    try {
+      const response = await authAPI.updateProfile(profileData);
+      if (response.data.success) {
+        // Обновляем локальное хранилище
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        localStorage.setItem('currentUser', JSON.stringify({
+          ...currentUser,
+          ...profileData
+        }));
+        
+        setSaveStatus('✅ Профиль обновлен');
+        setEditMode(false);
+        setTimeout(() => setSaveStatus(''), 2000);
+      }
+    } catch (error) {
+      console.error('Ошибка обновления профиля:', error);
+      setSaveStatus('❌ Ошибка обновления');
+      setTimeout(() => setSaveStatus(''), 2000);
+    }
+  };
+
+  const handleCancel = () => {
+    setProfileData({
+      name: user?.name || '',
+      email: user?.email || '',
+      bio: user?.bio || 'Расскажите о себе...',
+      location: user?.location || '',
+      phone: user?.phone || ''
+    });
+    setEditMode(false);
+  };
+
+  // Статистика пользователя
+  const stats = [
+    { label: 'Проектов', value: '8', icon: '🎯' },
+    { label: 'Задач выполнено', value: '124', icon: '✅' },
+    { label: 'В работе', value: '15', icon: '⏳' },
+    { label: 'На проверке', value: '7', icon: '👀' }
+  ];
+
+  // Последняя активность
+  const recentActivity = [
+    { action: 'Создал задачу', project: 'Маркетинг', time: '2 часа назад', icon: '✨' },
+    { action: 'Завершил задачу', project: 'Дизайн', time: '5 часов назад', icon: '✅' },
+    { action: 'Добавил комментарий', project: 'Разработка', time: 'Вчера', icon: '💬' },
+    { action: 'Загрузил файл', project: 'Маркетинг', time: '2 дня назад', icon: '📎' }
+  ];
+
+  return (
+    <div className="content-section profile-page">
+      <h1>Мой профиль</h1>
+      {saveStatus && <div className="save-status">{saveStatus}</div>}
+
+      <div className="profile-container">
+        {/* Основная информация */}
+        <div className="profile-header-card">
+          <div className="profile-header-content">
+            <div className="profile-avatar-large">
+              {user?.name?.charAt(0).toUpperCase()}
+            </div>
+            <div className="profile-header-info">
+              {editMode ? (
+                <input
+                  type="text"
+                  className="profile-input-large"
+                  value={profileData.name}
+                  onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                  placeholder="Ваше имя"
+                />
+              ) : (
+                <h2>{user?.name}</h2>
+              )}
+              {editMode ? (
+                <input
+                  type="email"
+                  className="profile-input"
+                  value={profileData.email}
+                  onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                  placeholder="Email"
+                />
+              ) : (
+                <p className="profile-email">{user?.email}</p>
+              )}
+              <div className="profile-badge">
+                {user?.role === 'admin' ? '👑 Администратор' : '👤 Пользователь'}
+              </div>
+            </div>
+            <div className="profile-actions">
+              {editMode ? (
+                <>
+                  <button className="btn-primary" onClick={handleSave}>
+                    💾 Сохранить
+                  </button>
+                  <button className="btn-secondary" onClick={handleCancel}>
+                    ✕ Отмена
+                  </button>
+                </>
+              ) : (
+                <button className="btn-primary" onClick={() => setEditMode(true)}>
+                  ✏️ Редактировать
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Статистика */}
+        <div className="profile-stats-card">
+          <h3>📊 Статистика</h3>
+          <div className="profile-stats-grid">
+            {stats.map((stat, index) => (
+              <div key={index} className="profile-stat-item">
+                <div className="profile-stat-icon">{stat.icon}</div>
+                <div className="profile-stat-value">{stat.value}</div>
+                <div className="profile-stat-label">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Детальная информация */}
+        <div className="profile-details-card">
+          <h3>📋 Информация</h3>
+          
+          <div className="profile-field">
+            <label>👤 Имя</label>
+            {editMode ? (
+              <input
+                type="text"
+                value={profileData.name}
+                onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                placeholder="Введите имя"
+              />
+            ) : (
+              <p>{user?.name}</p>
+            )}
+          </div>
+
+          <div className="profile-field">
+            <label>📧 Email</label>
+            {editMode ? (
+              <input
+                type="email"
+                value={profileData.email}
+                onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                placeholder="Введите email"
+              />
+            ) : (
+              <p>{user?.email}</p>
+            )}
+          </div>
+
+          <div className="profile-field">
+            <label>📝 О себе</label>
+            {editMode ? (
+              <textarea
+                value={profileData.bio}
+                onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+                placeholder="Расскажите о себе"
+                rows="3"
+              />
+            ) : (
+              <p>{profileData.bio}</p>
+            )}
+          </div>
+
+          <div className="profile-field">
+            <label>📍 Местоположение</label>
+            {editMode ? (
+              <input
+                type="text"
+                value={profileData.location}
+                onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+                placeholder="Город, страна"
+              />
+            ) : (
+              <p>{profileData.location || 'Не указано'}</p>
+            )}
+          </div>
+
+          <div className="profile-field">
+            <label>📱 Телефон</label>
+            {editMode ? (
+              <input
+                type="tel"
+                value={profileData.phone}
+                onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                placeholder="+7 (999) 123-45-67"
+              />
+            ) : (
+              <p>{profileData.phone || 'Не указано'}</p>
+            )}
+          </div>
+
+          <div className="profile-field">
+            <label>📅 Дата регистрации</label>
+            <p>{new Date(user?.createdAt || Date.now()).toLocaleDateString('ru-RU', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}</p>
+          </div>
+
+          <div className="profile-field">
+            <label>🔐 Роль</label>
+            <p className="profile-role-badge">
+              {user?.role === 'admin' ? '👑 Администратор' : '👤 Пользователь'}
+            </p>
+          </div>
+        </div>
+
+        {/* Последняя активность */}
+        <div className="profile-activity-card">
+          <h3>⚡ Последняя активность</h3>
+          <div className="profile-activity-list">
+            {recentActivity.map((activity, index) => (
+              <div key={index} className="profile-activity-item">
+                <div className="profile-activity-icon">{activity.icon}</div>
+                <div className="profile-activity-content">
+                  <p className="profile-activity-action">
+                    <strong>{activity.action}</strong> в проекте "{activity.project}"
+                  </p>
+                  <span className="profile-activity-time">{activity.time}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Profile;
