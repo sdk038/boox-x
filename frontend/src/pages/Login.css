@@ -209,6 +209,11 @@ input {
     text-align: center;
 }
 
+/* Скрываем мобильный переключатель на десктопе */
+.mobile-auth-toggle {
+    display: none;
+}
+
 /* ================================ */
 /* ===== DARK THEME — Login ======= */
 /* ================================ */
@@ -264,4 +269,142 @@ body.dark-theme .error-message {
     background-color: rgba(220, 53, 69, 0.15);
     color: #ff6b6b;
     border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+/* ================================= */
+/* ===== MOBILE — Login Page ======= */
+/* ================================= */
+@media (max-width: 768px) {
+    .auth-page {
+        padding: 20px;
+        height: 100vh;
+        align-items: center;
+    }
+
+    .container {
+        width: 100%;
+        min-height: auto;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Убираем overlay-анимацию на мобильных */
+    .overlay-container {
+        display: none;
+    }
+
+    .form-container {
+        position: relative;
+        width: 100% !important;
+        left: 0 !important;
+        transform: none !important;
+        opacity: 1 !important;
+        z-index: 5 !important;
+    }
+
+    .sign-in-container {
+        display: block;
+    }
+
+    .sign-up-container {
+        display: none;
+    }
+
+    .container.right-panel-active .sign-in-container {
+        display: none;
+        transform: none;
+    }
+
+    .container.right-panel-active .sign-up-container {
+        display: block;
+        transform: none;
+        opacity: 1;
+        z-index: 5;
+    }
+
+    form {
+        padding: 40px 24px;
+        position: relative;
+    }
+
+    form h1 {
+        font-size: 24px;
+        margin-bottom: 8px;
+    }
+
+    form input {
+        padding: 14px 16px;
+        font-size: 16px; /* Prevents iOS zoom on focus */
+        border-radius: 8px;
+    }
+
+    .form-button {
+        width: 100%;
+        padding: 14px;
+        font-size: 14px;
+        border-radius: 12px;
+        margin-top: 20px;
+    }
+
+    .forgot-password {
+        font-size: 13px;
+    }
+
+    /* Мобильный переключатель Login/Register */
+    .container::after {
+        content: '';
+        display: block;
+    }
+
+    .sso {
+        margin: 12px 0;
+    }
+
+    /* Мобильный переключатель */
+    .mobile-auth-toggle {
+        display: block !important;
+        text-align: center;
+        padding: 16px;
+        background: #f6f5f7;
+    }
+
+    .mobile-auth-toggle p {
+        margin: 0;
+        font-size: 14px;
+        color: #666;
+    }
+
+    .mobile-auth-toggle button {
+        background: none;
+        border: none;
+        color: #3c23c9;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 14px;
+        text-decoration: underline;
+    }
+
+    body.dark-theme .mobile-auth-toggle {
+        background: #252525;
+    }
+
+    body.dark-theme .mobile-auth-toggle p {
+        color: #b0b0b0;
+    }
+
+    body.dark-theme .mobile-auth-toggle button {
+        color: #6d8cff;
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-page {
+        padding: 16px;
+        align-items: flex-start;
+        padding-top: 60px;
+    }
+
+    form {
+        padding: 30px 20px;
+    }
 }

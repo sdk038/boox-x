@@ -138,6 +138,7 @@ export const Login = () => {
         <RegisterForm />
         <LoginForm />
 
+        {/* Desktop overlay */}
         <div className="overlay-container">
           <div className="overlay">
             <div className="overlay-panel overlay-left">
@@ -155,6 +156,15 @@ export const Login = () => {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Mobile toggle */}
+        <div className="mobile-auth-toggle">
+          {isSignUp ? (
+            <p>Уже есть аккаунт? <button onClick={() => setIsSignUp(false)}>Войти</button></p>
+          ) : (
+            <p>Нет аккаунта? <button onClick={() => setIsSignUp(true)}>Создать</button></p>
+          )}
         </div>
       </div>
     </div>

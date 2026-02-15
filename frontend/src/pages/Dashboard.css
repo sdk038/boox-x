@@ -491,35 +491,135 @@
   color: #333;
 }
 
-/* Responsive */
+/* ================================== */
+/* ===== MOBILE — Dashboard ========= */
+/* ================================== */
 @media (max-width: 768px) {
   .dashboard-content {
-    margin-left: 0;
-    padding: 20px;
+    margin-left: 0 !important;
+    padding: 16px;
+    padding-bottom: 80px; /* Место для нижней навигации */
+  }
+
+  .dashboard-content.sidebar-expanded {
+    margin-left: 0 !important;
+  }
+
+  .content-section h1 {
+    font-size: 24px;
+    margin-bottom: 20px;
   }
 
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
   }
 
-  .boards-grid,
+  .stat-card {
+    padding: 16px;
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 28px;
+  }
+
+  .stat-info h3 {
+    font-size: 24px;
+  }
+
+  .stat-info p {
+    font-size: 12px;
+  }
+
+  .boards-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
   .files-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .board-card,
+  .file-card {
+    padding: 16px;
   }
 
   .section-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 15px;
+    gap: 12px;
   }
 
+  .recent-activity {
+    padding: 16px;
+  }
+
+  /* Tables on mobile */
   .data-table {
     font-size: 12px;
   }
 
   .data-table th,
   .data-table td {
-    padding: 8px;
+    padding: 8px 6px;
+  }
+
+  .board-list,
+  .file-list {
+    padding: 16px;
+  }
+
+  /* Settings on mobile */
+  .settings-container {
+    gap: 16px;
+  }
+
+  .settings-section {
+    padding: 16px;
+  }
+
+  .profile-info {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  /* Modal on mobile */
+  .modal-content {
+    width: 95%;
+    padding: 20px;
+    margin: 16px;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .modal-actions button {
+    width: 100%;
+  }
+
+  .btn-primary, .btn-secondary {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-content {
+    padding: 12px;
+    padding-bottom: 80px;
   }
 }
 
@@ -1255,7 +1355,9 @@ body.dark-theme .profile-activity-action {
   color: #e0e0e0;
 }
 
-/* Responsive */
+/* ===================================== */
+/* ===== MOBILE — Profile Page ========= */
+/* ===================================== */
 @media (max-width: 968px) {
   .profile-container {
     grid-template-columns: 1fr;
@@ -1272,5 +1374,138 @@ body.dark-theme .profile-activity-action {
 
   .profile-actions {
     justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-page {
+    padding: 0;
+  }
+
+  .profile-container {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .profile-header-card {
+    padding: 24px 16px;
+    border-radius: 12px;
+  }
+
+  .profile-header-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .profile-avatar-large {
+    width: 80px;
+    height: 80px;
+    font-size: 32px;
+  }
+
+  .profile-header-info h2 {
+    font-size: 24px;
+  }
+
+  .profile-email {
+    font-size: 14px;
+  }
+
+  .profile-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .profile-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .profile-input-large {
+    font-size: 18px;
+    text-align: center;
+  }
+
+  .profile-input {
+    text-align: center;
+  }
+
+  /* Stats mobile */
+  .profile-stats-card {
+    padding: 20px 16px;
+  }
+
+  .profile-stats-card h3 {
+    font-size: 18px;
+  }
+
+  .profile-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .profile-stat-item {
+    padding: 16px 12px;
+  }
+
+  .profile-stat-icon {
+    font-size: 28px;
+    margin-bottom: 8px;
+  }
+
+  .profile-stat-value {
+    font-size: 24px;
+  }
+
+  .profile-stat-label {
+    font-size: 12px;
+  }
+
+  /* Details + Activity */
+  .profile-details-card,
+  .profile-activity-card {
+    padding: 20px 16px;
+  }
+
+  .profile-details-card h3,
+  .profile-activity-card h3 {
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+
+  .profile-field label {
+    font-size: 13px;
+  }
+
+  .profile-field p {
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+
+  .profile-activity-item {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .profile-activity-action {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .profile-stat-item {
+    padding: 12px 8px;
+  }
+
+  .profile-stat-value {
+    font-size: 20px;
   }
 }
