@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Login } from "./components/Login";
 import Dashboard from "./components/Dashboard";
+import Logo from "./components/Logo";
 import './App.css';
 
 
@@ -16,6 +17,7 @@ import './App.css';
 const LoadingScreen = () => (
     <div className="loading-screen">
         <div className="loading-spinner">
+            <Logo size={80} />
             <div className="spinner"></div>
             <p>Загрузка...</p>
         </div>

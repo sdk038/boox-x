@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from '../context/AuthContext';
+import Logo from './Logo';
 import '../pages/Login.css';
 
 const LoginForm = ({ onSuccess }) => {
@@ -32,6 +33,9 @@ const LoginForm = ({ onSuccess }) => {
   return (
     <div className="form-container sign-in-container">
       <form onSubmit={handleSubmit}>
+        <div className="login-logo">
+          <Logo size={50} />
+        </div>
         <h1>Sign in</h1>
         <span>or use your account</span>
         {error && <div className="error-message">{error}</div>}
@@ -94,8 +98,10 @@ const RegisterForm = ({ onSuccess }) => {
   return (
     <div className="form-container sign-up-container">
       <form onSubmit={handleSubmit}>
+        <div className="login-logo">
+          <Logo size={50} />
+        </div>
         <h1>Create Account</h1>
-        <br/>
         <span>or use your email for registration</span>
         {error && <div className="error-message">{error}</div>}
         <input
@@ -142,17 +148,19 @@ export const Login = () => {
         <div className="overlay-container">
           <div className="overlay">
             <div className="overlay-panel overlay-left">
-              <h2>Welcome back</h2>
-              <p>To keep connected with us please login with your personal info</p>
+              <Logo size={60} />
+              <h2>С возвращением!</h2>
+              <p>Войдите в свой аккаунт, чтобы продолжить работу с проектами</p>
               <button className="ghost" onClick={() => setIsSignUp(false)}>
-                SIGN IN
+                ВОЙТИ
               </button>
             </div>
             <div className="overlay-panel overlay-right">
-              <h2>Hello there</h2>
-              <p>Enter your personal details and start your journey with us</p>
+              <Logo size={60} />
+              <h2>Привет!</h2>
+              <p>Создайте аккаунт и начните управлять проектами с помощью AI</p>
               <button className="ghost" onClick={() => setIsSignUp(true)}>
-                SIGN UP
+                СОЗДАТЬ АККАУНТ
               </button>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { HomeAlt1, Dashboard, Gear, Folder, SignOut, Pin } from 'akar-icons';
 import { useAuth } from '../context/AuthContext';
+import Logo from './Logo';
 import '../pages/Sidebar.css';
 
 const Sidebar = ({ activeTab, setActiveTab, onExpandChange, isPinned, onPinToggle }) => {
@@ -88,7 +89,10 @@ const Sidebar = ({ activeTab, setActiveTab, onExpandChange, isPinned, onPinToggl
         <div className="right">
           <div className="right-header">
             <div className="header-text">
-              <h1>Daler AI</h1>
+              <div className="sidebar-brand">
+                <Logo size={32} />
+                <h1>Daler AI</h1>
+              </div>
               <p className="user-name">Привет, {user?.name}!</p>
             </div>
             <button 

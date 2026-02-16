@@ -1,0 +1,47 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4066ff"/>
+      <stop offset="50%" stop-color="#6d5bfa"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+  </defs>
+  <path d="M256 32L456 140V332L256 440L56 332V140L256 32Z" fill="url(#bg)"/>
+  <path d="M256 60L430 155V315L256 410L82 315V155L256 60Z" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+  <g opacity="0.3" stroke="#818cf8" stroke-width="1.5">
+    <line x1="170" y1="180" x2="256" y2="140"/>
+    <line x1="342" y1="180" x2="256" y2="140"/>
+    <line x1="170" y1="180" x2="170" y2="290"/>
+    <line x1="342" y1="180" x2="342" y2="290"/>
+    <line x1="170" y1="290" x2="256" y2="340"/>
+    <line x1="342" y1="290" x2="256" y2="340"/>
+    <line x1="170" y1="180" x2="342" y2="290"/>
+    <line x1="342" y1="180" x2="170" y2="290"/>
+  </g>
+  <g opacity="0.4">
+    <circle cx="256" cy="140" r="6" fill="#60a5fa"/>
+    <circle cx="170" cy="180" r="5" fill="#818cf8"/>
+    <circle cx="342" cy="180" r="5" fill="#818cf8"/>
+    <circle cx="170" cy="290" r="5" fill="#818cf8"/>
+    <circle cx="342" cy="290" r="5" fill="#818cf8"/>
+    <circle cx="256" cy="340" r="6" fill="#60a5fa"/>
+  </g>
+  <text x="256" y="280" text-anchor="middle" fill="white" font-family="Inter, SF Pro Display, -apple-system, sans-serif" font-weight="800" font-size="200" letter-spacing="-8">D</text>
+  <g transform="translate(340, 340)">
+    <rect x="0" y="0" width="56" height="56" rx="14" fill="rgba(255,255,255,0.2)"/>
+    <rect x="4" y="4" width="48" height="48" rx="11" fill="rgba(255,255,255,0.1)"/>
+    <text x="28" y="38" text-anchor="middle" fill="white" font-family="Inter, sans-serif" font-weight="700" font-size="24">AI</text>
+    <rect x="-4" y="16" width="8" height="3" rx="1.5" fill="rgba(255,255,255,0.4)"/>
+    <rect x="-4" y="28" width="8" height="3" rx="1.5" fill="rgba(255,255,255,0.4)"/>
+    <rect x="-4" y="40" width="8" height="3" rx="1.5" fill="rgba(255,255,255,0.4)"/>
+    <rect x="52" y="16" width="8" height="3" rx="1.5" fill="rgba(255,255,255,0.4)"/>
+    <rect x="52" y="28" width="8" height="3" rx="1.5" fill="rgba(255,255,255,0.4)"/>
+    <rect x="52" y="40" width="8" height="3" rx="1.5" fill="rgba(255,255,255,0.4)"/>
+    <rect x="16" y="-4" width="3" height="8" rx="1.5" fill="rgba(255,255,255,0.4)"/>
+    <rect x="28" y="-4" width="3" height="8" rx="1.5" fill="rgba(255,255,255,0.4)"/>
+    <rect x="40" y="-4" width="3" height="8" rx="1.5" fill="rgba(255,255,255,0.4)"/>
+    <rect x="16" y="52" width="3" height="8" rx="1.5" fill="rgba(255,255,255,0.4)"/>
+    <rect x="28" y="52" width="3" height="8" rx="1.5" fill="rgba(255,255,255,0.4)"/>
+    <rect x="40" y="52" width="3" height="8" rx="1.5" fill="rgba(255,255,255,0.4)"/>
+  </g>
+</svg>
