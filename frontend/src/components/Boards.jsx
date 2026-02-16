@@ -10,6 +10,10 @@ const Boards = () => {
 
   return (
     <div className="content-section">
+      <div className="dev-notice">
+        <span className="dev-notice-icon">🚧</span>
+        <p>Раздел находится в разработке. Скоро здесь появятся новые возможности!</p>
+      </div>
       <div className="section-header">
         <h1>Boards</h1>
         <button className="btn-primary">+ Создать доску</button>
@@ -59,10 +63,6 @@ const Boards = () => {
         </table>
       </div>
 
-      <div className="dev-notice">
-        <span className="dev-notice-icon">🚧</span>
-        <p>Раздел находится в разработке. Скоро здесь появятся новые возможности!</p>
-      </div>
     </div>
   );
 };

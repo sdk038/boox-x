@@ -20,6 +20,10 @@ const Files = () => {
 
   return (
     <div className="content-section">
+      <div className="dev-notice">
+        <span className="dev-notice-icon">🚧</span>
+        <p>Раздел находится в разработке. Скоро здесь появятся новые возможности!</p>
+      </div>
       <div className="section-header">
         <h1>Files</h1>
         <button className="btn-primary">+ Загрузить файл</button>
@@ -69,10 +73,6 @@ const Files = () => {
         </table>
       </div>
 
-      <div className="dev-notice">
-        <span className="dev-notice-icon">🚧</span>
-        <p>Раздел находится в разработке. Скоро здесь появятся новые возможности!</p>
-      </div>
     </div>
   );
 };
