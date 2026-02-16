@@ -7,7 +7,7 @@ import Files from './Files';
 import Settings from './Settings';
 import Profile from './Profile';
 import { useAuth } from '../context/AuthContext';
-import { trackingAPI } from '../services/api';
+import { trackingAPI, boardsAPI, tasksAPI, filesAPI } from '../services/api';
 import '../pages/Dashboard.css';
 
 // Маппинг табов на URL-хэши
@@ -38,68 +38,254 @@ const getTabFromHash = () => {
   return TAB_ROUTES[hash] ? hash : 'boards';
 };
 
-const HomeContent = ({ user }) => {
+// Время суток для приветствия
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 6) return 'Доброй ночи';
+  if (hour < 12) return 'Доброе утро';
+  if (hour < 18) return 'Добрый день';
+  return 'Добрый вечер';
+};
+
+// Сколько времени прошло
+const timeAgo = (date) => {
+  const now = new Date();
+  const d = new Date(date);
+  const diff = Math.floor((now - d) / 1000);
+  if (diff < 60) return 'только что';
+  if (diff < 3600) return `${Math.floor(diff / 60)} мин. назад`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} ч. назад`;
+  if (diff < 172800) return 'вчера';
+  return d.toLocaleDateString('ru-RU');
+};
+
+const getActivityIcon = (action) => {
+  const icons = {
+    'login': '🔐', 'register': '✨', 'logout': '👋',
+    'create_board': '📋', 'update_board': '✏️', 'delete_board': '🗑️',
+    'create_task': '➕', 'update_task': '📝', 'delete_task': '❌',
+    'upload_file': '📤', 'delete_file': '🗑️',
+    'update_profile': '👤', 'update_settings': '⚙️',
+    'ai_chat': '🤖', 'ai_generate_project': '🚀',
+    'ai_generate_presentation': '📊', 'page_view': '👁️',
+    'change_theme': '🎨'
+  };
+  return icons[action] || '📌';
+};
+
+const getActivityText = (action) => {
+  const texts = {
+    'login': 'Вход в систему', 'register': 'Регистрация', 'logout': 'Выход из системы',
+    'create_board': 'Создана доска', 'update_board': 'Обновлена доска', 'delete_board': 'Удалена доска',
+    'create_task': 'Создана задача', 'update_task': 'Обновлена задача', 'delete_task': 'Удалена задача',
+    'upload_file': 'Загружен файл', 'delete_file': 'Удалён файл',
+    'update_profile': 'Обновлён профиль', 'update_settings': 'Изменены настройки',
+    'ai_chat': 'AI чат', 'ai_generate_project': 'AI генерация проекта',
+    'ai_generate_presentation': 'AI презентация', 'page_view': 'Просмотр страницы',
+    'change_theme': 'Смена темы'
+  };
+  return texts[action] || action;
+};
+
+const HomeContent = ({ user, onNavigate }) => {
+  const [stats, setStats] = useState({ boards: 0, tasks: 0, files: 0 });
+  const [recentBoards, setRecentBoards] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadHomeData();
+  }, []);
+
+  const loadHomeData = async () => {
+    try {
+      const [boardsRes, tasksRes, filesRes] = await Promise.all([
+        boardsAPI.getAll().catch(() => ({ data: { boards: [] } })),
+        tasksAPI.getAll().catch(() => ({ data: { tasks: [] } })),
+        filesAPI.getAll().catch(() => ({ data: { files: [] } }))
+      ]);
+
+      const boards = boardsRes.data.boards || boardsRes.data || [];
+      const tasks = tasksRes.data.tasks || tasksRes.data || [];
+      const files = filesRes.data.files || filesRes.data || [];
+
+      setStats({
+        boards: Array.isArray(boards) ? boards.length : 0,
+        tasks: Array.isArray(tasks) ? tasks.length : 0,
+        files: Array.isArray(files) ? files.length : 0
+      });
+
+      if (Array.isArray(boards)) {
+        setRecentBoards(boards.slice(0, 3));
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки данных:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const features = [
+    {
+      icon: '📋',
+      title: 'Канбан доски',
+      description: 'Создавайте проекты, управляйте задачами с помощью удобных Kanban-досок',
+      action: 'boards',
+      color: '#4066ff'
+    },
+    {
+      icon: '🤖',
+      title: 'AI Ассистент',
+      description: 'Генерация проектов, задач, презентаций и ответов на любые вопросы через AI',
+      action: 'ai',
+      color: '#8b5cf6'
+    },
+    {
+      icon: '📁',
+      title: 'Файловое хранилище',
+      description: 'Загружайте и храните файлы ваших проектов в одном месте',
+      action: 'files',
+      color: '#10b981'
+    },
+    {
+      icon: '👤',
+      title: 'Профиль и настройки',
+      description: 'Настройте аватар, тему, уведомления — всё под вас',
+      action: 'profile',
+      color: '#f59e0b'
+    }
+  ];
+
   return (
     <div className="content-section">
-      <h1>Добро пожаловать, {user?.name}! 👋</h1>
-      <p className="subtitle">Управляйте своими проектами эффективно</p>
-      
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon">📊</div>
-          <div className="stat-info">
-            <h2>24</h2>
-            <p>Активных задач</p>
+      {/* Welcome Banner */}
+      <div className="home-welcome-banner">
+        <div className="home-welcome-text">
+          <h1>{getGreeting()}, {user?.name}! 👋</h1>
+          <p className="subtitle">Это ваш центр управления. Здесь вы видите обзор своего рабочего пространства.</p>
+        </div>
+        <div className="home-welcome-date">
+          {new Date().toLocaleDateString('ru-RU', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          })}
+        </div>
+      </div>
+
+      {/* Real Stats */}
+      <div className="home-stats-grid">
+        <div className="home-stat-card" onClick={() => onNavigate('boards')}>
+          <div className="home-stat-icon" style={{ background: 'linear-gradient(135deg, #4066ff, #6d5bfa)' }}>📋</div>
+          <div className="home-stat-info">
+            <h2>{loading ? '...' : stats.boards}</h2>
+            <p>Досок</p>
           </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon">✅</div>
-          <div className="stat-info">
-            <h2>18</h2>
-            <p>Выполнено</p>
+        <div className="home-stat-card" onClick={() => onNavigate('boards')}>
+          <div className="home-stat-icon" style={{ background: 'linear-gradient(135deg, #10b981, #34d399)' }}>✅</div>
+          <div className="home-stat-info">
+            <h2>{loading ? '...' : stats.tasks}</h2>
+            <p>Задач</p>
           </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon">🎯</div>
-          <div className="stat-info">
-            <h2>4</h2>
-            <p>Проектов</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">⏱️</div>
-          <div className="stat-info">
-            <h2>89%</h2>
-            <p>Продуктивность</p>
+        <div className="home-stat-card" onClick={() => onNavigate('files')}>
+          <div className="home-stat-icon" style={{ background: 'linear-gradient(135deg, #f59e0b, #fbbf24)' }}>📁</div>
+          <div className="home-stat-info">
+            <h2>{loading ? '...' : stats.files}</h2>
+            <p>Файлов</p>
           </div>
         </div>
       </div>
 
-      <div className="recent-activity">
-        <h2>Последняя активность</h2>
-        <div className="activity-list">
-          <div className="activity-item">
-            <div className="activity-icon">✅</div>
-            <div className="activity-details">
-              <p><strong>Задача выполнена:</strong> Создать дизайн логотипа</p>
-              <span className="activity-time">2 часа назад</span>
+      {/* Quick Actions */}
+      <div className="home-quick-actions">
+        <button className="home-quick-btn" onClick={() => onNavigate('boards')}>
+          <span>📋</span> Создать доску
+        </button>
+        <button className="home-quick-btn" onClick={() => onNavigate('ai')}>
+          <span>🤖</span> Спросить AI
+        </button>
+        <button className="home-quick-btn" onClick={() => onNavigate('files')}>
+          <span>📤</span> Загрузить файл
+        </button>
+        <button className="home-quick-btn" onClick={() => onNavigate('settings')}>
+          <span>⚙️</span> Настройки
+        </button>
+      </div>
+
+      {/* Features Section */}
+      <div className="home-section-title">
+        <h2>🚀 Что умеет Daler AI</h2>
+        <p>Познакомьтесь с возможностями платформы</p>
+      </div>
+
+      <div className="home-features-grid">
+        {features.map((feature, i) => (
+          <div 
+            key={i} 
+            className="home-feature-card"
+            onClick={() => onNavigate(feature.action)}
+          >
+            <div className="home-feature-icon" style={{ background: feature.color + '18', color: feature.color }}>
+              {feature.icon}
+            </div>
+            <div className="home-feature-content">
+              <h3>{feature.title}</h3>
+              <p>{feature.description}</p>
+            </div>
+            <div className="home-feature-arrow">→</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent Boards */}
+      {recentBoards.length > 0 && (
+        <>
+          <div className="home-section-title">
+            <h2>📋 Ваши последние проекты</h2>
+          </div>
+          <div className="home-recent-boards">
+            {recentBoards.map((board) => (
+              <div 
+                key={board._id} 
+                className="home-board-card"
+                onClick={() => onNavigate('boards')}
+              >
+                <div 
+                  className="home-board-color" 
+                  style={{ background: board.color || '#4066ff' }}
+                />
+                <div className="home-board-info">
+                  <h4>{board.title || board.name}</h4>
+                  <p>{board.description || 'Без описания'}</p>
+                </div>
+                <span className="home-board-date">
+                  {timeAgo(board.createdAt || board.updatedAt)}
+                </span>
+              </div>
+            ))}
+            <div 
+              className="home-board-card home-board-add"
+              onClick={() => onNavigate('boards')}
+            >
+              <span className="home-board-add-icon">+</span>
+              <p>Создать новый проект</p>
             </div>
           </div>
-          <div className="activity-item">
-            <div className="activity-icon">📝</div>
-            <div className="activity-details">
-              <p><strong>Новая задача:</strong> Подготовить презентацию</p>
-              <span className="activity-time">4 часа назад</span>
-            </div>
-          </div>
-          <div className="activity-item">
-            <div className="activity-icon">💬</div>
-            <div className="activity-details">
-              <p><strong>Комментарий:</strong> Отличная работа с макетами!</p>
-              <span className="activity-time">Вчера</span>
-            </div>
+        </>
+      )}
+
+      {/* AI Promo */}
+      <div className="home-ai-promo" onClick={() => onNavigate('ai')}>
+        <div className="home-ai-promo-content">
+          <div className="home-ai-promo-icon">🤖</div>
+          <div>
+            <h3>Попробуйте AI Ассистент</h3>
+            <p>Сгенерируйте проект, презентацию или задайте любой вопрос — AI поможет!</p>
           </div>
         </div>
+        <button className="home-ai-promo-btn">Попробовать →</button>
       </div>
     </div>
   );
@@ -146,7 +332,7 @@ const Dashboard = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
-        return <HomeContent user={user} />;
+        return <HomeContent user={user} onNavigate={handleTabChange} />;
       case 'boards':
         return <Boards />;
       case 'files':
