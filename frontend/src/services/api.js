@@ -115,7 +115,9 @@ export const aiAPI = {
   analyzeProject: (boardId) => 
     api.post('/ai/analyze-project', { boardId }),
   chat: (message, context = null) => 
-    api.post('/ai/chat', { message, context })
+    api.post('/ai/chat', { message, context }),
+  generatePresentation: (topic, slidesCount = 8, style = 'modern') =>
+    api.post('/ai/generate-presentation', { topic, slidesCount, style })
 };
 
 export default api;

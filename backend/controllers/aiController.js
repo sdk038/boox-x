@@ -156,6 +156,92 @@ const getDemoChatResponse = (message) => {
   return `💡 Хороший вопрос!\n\nВот мои рекомендации по теме "${message.slice(0, 60)}":\n\n1️⃣ **Планирование** - начните с четких целей\n2️⃣ **Исследование** - изучите существующие решения\n3️⃣ **Прототип** - создайте быстрый прототип\n4️⃣ **Итерация** - улучшайте постепенно\n5️⃣ **Тестирование** - проверяйте на каждом этапе\n\n🔗 Попробуйте **генерацию проекта** - опишите идею и я создам план!\n\nЗадайте более конкретный вопрос и я помогу детальнее! 😊`;
 };
 
+const getDemoPresentationResponse = (topic, count) => {
+  return {
+    title: topic,
+    subtitle: `Презентация на тему: ${topic}`,
+    author: 'AI Presentation',
+    slides: [
+      {
+        type: 'title',
+        title: topic,
+        subtitle: 'Подготовлено с помощью AI',
+        emoji: '🎯'
+      },
+      {
+        type: 'content',
+        title: 'Введение',
+        bullets: [
+          `${topic} — актуальная тема в современном мире`,
+          'Рассмотрим основные аспекты и ключевые моменты',
+          'Проанализируем текущую ситуацию и перспективы',
+          'Подведём итоги и сформулируем выводы'
+        ],
+        emoji: '📋'
+      },
+      {
+        type: 'stats',
+        title: 'Ключевые факты',
+        stats: [
+          { value: '78%', label: 'Рост интереса к теме' },
+          { value: '2.5x', label: 'Увеличение популярности' },
+          { value: '95%', label: 'Положительных отзывов' },
+          { value: '500+', label: 'Исследований проведено' }
+        ],
+        emoji: '📊'
+      },
+      {
+        type: 'two-columns',
+        title: 'Преимущества и вызовы',
+        left: {
+          heading: '✅ Преимущества',
+          items: ['Высокая эффективность', 'Доступность', 'Масштабируемость', 'Современность']
+        },
+        right: {
+          heading: '⚠️ Вызовы',
+          items: ['Сложность внедрения', 'Нехватка кадров', 'Высокие начальные затраты', 'Необходимость обучения']
+        },
+        emoji: '⚖️'
+      },
+      {
+        type: 'content',
+        title: 'Основные направления',
+        bullets: [
+          '🔬 Исследования и разработка новых подходов',
+          '📈 Практическое применение в различных сферах',
+          '🤝 Международное сотрудничество и обмен опытом',
+          '📚 Образование и подготовка специалистов',
+          '💡 Инновации и передовые решения'
+        ],
+        emoji: '🗺️'
+      },
+      {
+        type: 'quote',
+        quote: 'Единственный способ делать великую работу — любить то, что ты делаешь.',
+        author: 'Стив Джобс',
+        emoji: '💬'
+      },
+      {
+        type: 'content',
+        title: 'Выводы',
+        bullets: [
+          `${topic} имеет огромный потенциал для развития`,
+          'Необходим комплексный подход к решению задач',
+          'Важно учитывать международный опыт',
+          'Инвестиции в образование — ключ к успеху'
+        ],
+        emoji: '🎯'
+      },
+      {
+        type: 'end',
+        title: 'Спасибо за внимание!',
+        subtitle: 'Вопросы и обсуждение',
+        emoji: '🙏'
+      }
+    ]
+  };
+};
+
 const getDemoTaskResponse = (text) => {
   const t = text.toLowerCase();
   let priority = 'medium';
@@ -541,6 +627,117 @@ ${projectInfo.tasks.map(t => `- ${t.title} [${t.status}] [${t.priority}]`).join(
       message: 'Ошибка при анализе проекта',
       error: error.message 
     });
+  }
+};
+
+// @desc    Генерация презентации
+// @route   POST /api/ai/generate-presentation
+// @access  Private
+exports.generatePresentation = async (req, res) => {
+  try {
+    const { topic, slidesCount = 8, style = 'modern' } = req.body;
+
+    if (!topic) {
+      return res.status(400).json({ message: 'Укажите тему презентации' });
+    }
+
+    const count = Math.min(Math.max(parseInt(slidesCount) || 8, 3), 20);
+
+    const prompt = `Ты — эксперт по созданию презентаций. Создай презентацию на тему: "${topic}"
+
+Количество слайдов: ${count}
+Стиль: ${style}
+
+Верни ТОЛЬКО валидный JSON в формате:
+{
+  "title": "Название презентации",
+  "subtitle": "Подзаголовок",
+  "author": "AI Presentation",
+  "slides": [
+    {
+      "type": "title",
+      "title": "Заголовок на титульном слайде",
+      "subtitle": "Подзаголовок",
+      "emoji": "🎯"
+    },
+    {
+      "type": "content",
+      "title": "Заголовок слайда",
+      "bullets": ["Пункт 1", "Пункт 2", "Пункт 3"],
+      "emoji": "📊",
+      "note": "Примечание спикера (опционально)"
+    },
+    {
+      "type": "two-columns",
+      "title": "Заголовок",
+      "left": { "heading": "Левый", "items": ["пункт 1", "пункт 2"] },
+      "right": { "heading": "Правый", "items": ["пункт 1", "пункт 2"] },
+      "emoji": "⚖️"
+    },
+    {
+      "type": "quote",
+      "quote": "Цитата",
+      "author": "Автор",
+      "emoji": "💬"
+    },
+    {
+      "type": "stats",
+      "title": "Статистика",
+      "stats": [
+        { "value": "85%", "label": "описание" },
+        { "value": "1M+", "label": "описание" }
+      ],
+      "emoji": "📈"
+    },
+    {
+      "type": "end",
+      "title": "Спасибо за внимание!",
+      "subtitle": "Вопросы?",
+      "emoji": "🙏"
+    }
+  ]
+}
+
+Важно:
+- Первый слайд ОБЯЗАТЕЛЬНО type "title"
+- Последний слайд ОБЯЗАТЕЛЬНО type "end"
+- Между ними используй разные типы: content, two-columns, quote, stats
+- Контент должен быть содержательным и информативным
+- Используй уместные emoji
+- Возвращай ТОЛЬКО JSON, без markdown и пояснений`;
+
+    const aiResult = await callGemini(prompt);
+
+    if (aiResult.success) {
+      try {
+        const jsonMatch = aiResult.text.match(/\{[\s\S]*\}/);
+        const presentation = JSON.parse(jsonMatch ? jsonMatch[0] : aiResult.text);
+        return res.json({
+          success: true,
+          presentation,
+          source: 'gemini'
+        });
+      } catch (parseError) {
+        console.error('Ошибка парсинга презентации:', parseError);
+      }
+    }
+
+    // DEMO fallback
+    const presentation = getDemoPresentationResponse(topic, count);
+    res.json({
+      success: true,
+      presentation,
+      source: 'demo'
+    });
+
+  } catch (error) {
+    console.error('Ошибка генерации презентации:', error);
+    try {
+      const presentation = getDemoPresentationResponse(req.body.topic || 'Презентация', 8);
+      return res.json({ success: true, presentation, source: 'demo' });
+    } catch (e) {
+      res.status(500).json({ message: 'Ошибка генерации презентации', error: error.message });
+    }
   }
 };
 

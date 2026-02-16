@@ -5,7 +5,8 @@ const {
   createProjectFromAI,
   generateTask,
   analyzeProject,
-  chat
+  chat,
+  generatePresentation
 } = require('../controllers/aiController');
 const { protect } = require('../middleware/auth');
 
@@ -24,5 +25,8 @@ router.post('/analyze-project', analyzeProject);
 
 // Чат с AI
 router.post('/chat', chat);
+
+// Генерация презентации
+router.post('/generate-presentation', generatePresentation);
 
 module.exports = router;
