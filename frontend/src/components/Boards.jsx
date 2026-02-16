@@ -58,6 +58,11 @@ const Boards = () => {
           </tbody>
         </table>
       </div>
+
+      <div className="dev-notice">
+        <span className="dev-notice-icon">🚧</span>
+        <p>Раздел находится в разработке. Скоро здесь появятся новые возможности!</p>
+      </div>
     </div>
   );
 };

@@ -1724,3 +1724,32 @@ body.dark-theme .profile-activity-action {
     font-size: 20px;
   }
 }
+
+/* Dev Notice */
+.dev-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 30px;
+  padding: 16px 24px;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 12px;
+  color: #6d5a00;
+  font-size: 15px;
+}
+
+.dev-notice-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.dev-notice p {
+  margin: 0;
+}
+
+body.dark-theme .dev-notice {
+  background: #2a2518;
+  border-color: #4a3f1f;
+  color: #d4c27a;
+}
