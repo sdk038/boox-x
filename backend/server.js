@@ -56,18 +56,10 @@ app.get('/', (req, res) => {
 });
 
 
-if (process.env.NODE_ENV === 'production') {
-  const frontendPath = path.join(__dirname, '..', 'frontend', 'build');
-  app.use(express.static(frontendPath));
-
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'index.html'));
-  });
-} else {
-  app.use((req, res) => {
-    res.status(404).json({ message: 'Маршрут не найден' });
-  });
-}
+// 404 для несуществующих API маршрутов
+app.use((req, res) => {
+  res.status(404).json({ message: 'Маршрут не найден' });
+});
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
