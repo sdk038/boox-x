@@ -134,7 +134,11 @@ const Settings = ({ user }) => {
           <h2>Информация профиля</h2>
           <div className="profile-info">
             <div className="profile-avatar">
-              {user?.name?.charAt(0).toUpperCase()}
+              {user?.avatar ? (
+                <img src={user.avatar} alt="Avatar" className="avatar-img" />
+              ) : (
+                user?.name?.charAt(0).toUpperCase()
+              )}
             </div>
             <div className="profile-details">
               <h3>{user?.name}</h3>
