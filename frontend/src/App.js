@@ -4,7 +4,7 @@ import { Login } from "./components/Login";
 import Dashboard from "./components/Dashboard";
 import './App.css';
 
-// Мгновенно применяем тему из localStorage до рендера
+
 (function initTheme() {
     if (localStorage.getItem('darkMode') === 'true') {
         document.body.classList.add('dark-theme');
@@ -25,7 +25,6 @@ const LoadingScreen = () => (
 const AppContent = () => {
     const { isAuthenticated, loading } = useAuth();
 
-    // Также следим за изменениями в localStorage (на случай нескольких вкладок)
     useEffect(() => {
         const handleStorage = (e) => {
             if (e.key === 'darkMode') {
@@ -40,7 +39,7 @@ const AppContent = () => {
         return () => window.removeEventListener('storage', handleStorage);
     }, []);
 
-    // Пока проверяем токен — показываем загрузку, а не Login
+
     if (loading) {
         return <LoadingScreen />;
     }

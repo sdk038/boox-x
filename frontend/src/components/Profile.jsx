@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { authAPI } from '../services/api';
 
 const Profile = ({ user, onUserUpdate }) => {
@@ -13,7 +13,10 @@ const Profile = ({ user, onUserUpdate }) => {
   const [saveStatus, setSaveStatus] = useState('');
   const [avatarPreview, setAvatarPreview] = useState(user?.avatar || null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
   const fileInputRef = useRef(null);
+  const longPressTimer = useRef(null);
+  const isLongPress = useRef(false);
 
   const handleSave = async () => {
     try {
@@ -48,8 +51,37 @@ const Profile = ({ user, onUserUpdate }) => {
     setEditMode(false);
   };
 
-  const handleAvatarClick = () => {
+  // Long press — открывает модалку с увеличенной авой
+  const handleAvatarPointerDown = useCallback((e) => {
+    isLongPress.current = false;
+    longPressTimer.current = setTimeout(() => {
+      isLongPress.current = true;
+      if (avatarPreview) {
+        setShowAvatarModal(true);
+      }
+    }, 600); // 0.6 сек для удобства
+  }, [avatarPreview]);
+
+  const handleAvatarPointerUp = useCallback(() => {
+    clearTimeout(longPressTimer.current);
+    // Короткий клик — открыть выбор файла (только если не было long press)
+    if (!isLongPress.current) {
+      fileInputRef.current?.click();
+    }
+  }, []);
+
+  const handleAvatarPointerLeave = useCallback(() => {
+    clearTimeout(longPressTimer.current);
+  }, []);
+
+  const handleReplaceAvatar = () => {
+    setShowAvatarModal(false);
     fileInputRef.current?.click();
+  };
+
+  const handleDeleteAvatarFromModal = async () => {
+    setShowAvatarModal(false);
+    await handleDeleteAvatar();
   };
 
   const handleAvatarChange = async (e) => {
@@ -150,7 +182,13 @@ const Profile = ({ user, onUserUpdate }) => {
         {/* Основная информация */}
         <div className="profile-header-card">
           <div className="profile-header-content">
-            <div className="profile-avatar-wrapper" onClick={handleAvatarClick}>
+            <div 
+              className="profile-avatar-wrapper"
+              onPointerDown={handleAvatarPointerDown}
+              onPointerUp={handleAvatarPointerUp}
+              onPointerLeave={handleAvatarPointerLeave}
+              onContextMenu={(e) => e.preventDefault()}
+            >
               {avatarPreview ? (
                 <img src={avatarPreview} alt="Avatar" className="profile-avatar-large profile-avatar-img" />
               ) : (
@@ -169,11 +207,6 @@ const Profile = ({ user, onUserUpdate }) => {
                 style={{ display: 'none' }}
               />
             </div>
-            {avatarPreview && (
-              <button className="btn-delete-avatar" onClick={(e) => { e.stopPropagation(); handleDeleteAvatar(); }}>
-                ✕ Удалить фото
-              </button>
-            )}
             <div className="profile-header-info">
               {editMode ? (
                 <input
@@ -343,6 +376,32 @@ const Profile = ({ user, onUserUpdate }) => {
           </div>
         </div>
       </div>
+
+      {/* Модалка увеличенного аватара */}
+      {showAvatarModal && (
+        <div className="avatar-modal-overlay" onClick={() => setShowAvatarModal(false)}>
+          <div className="avatar-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="avatar-modal-close" onClick={() => setShowAvatarModal(false)}>✕</button>
+            <div className="avatar-modal-image">
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="Avatar" />
+              ) : (
+                <div className="avatar-modal-placeholder">
+                  {user?.name?.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+            <div className="avatar-modal-actions">
+              <button className="avatar-modal-btn replace" onClick={handleReplaceAvatar}>
+                🔄 Заменить аву
+              </button>
+              <button className="avatar-modal-btn delete" onClick={handleDeleteAvatarFromModal}>
+                🗑 Удалить аву
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
