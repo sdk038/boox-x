@@ -44,7 +44,11 @@ export const authAPI = {
   register: (userData) => api.post('/auth/register', userData),
   login: (credentials) => api.post('/auth/login', credentials),
   getMe: () => api.get('/auth/me'),
-  updateProfile: (data) => api.put('/auth/profile', data)
+  updateProfile: (data) => api.put('/auth/profile', data),
+  uploadAvatar: (formData) => api.post('/auth/avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  deleteAvatar: () => api.delete('/auth/avatar')
 };
 
 // Boards API

@@ -45,7 +45,11 @@ const Sidebar = ({ activeTab, setActiveTab, onExpandChange, isPinned, onPinToggl
             style={{ cursor: 'pointer' }}
             title="Мой профиль"
           >
-            {user?.name?.charAt(0).toUpperCase() || 'U'}
+            {user?.avatar ? (
+              <img src={user.avatar} alt="Avatar" className="avatar-img" />
+            ) : (
+              user?.name?.charAt(0).toUpperCase() || 'U'
+            )}
           </div>
 
           <button
@@ -172,7 +176,11 @@ const Sidebar = ({ activeTab, setActiveTab, onExpandChange, isPinned, onPinToggl
           <div className="mobile-menu" onClick={(e) => e.stopPropagation()}>
             <div className="mobile-menu-header">
               <div className="mobile-menu-avatar">
-                {user?.name?.charAt(0).toUpperCase() || 'U'}
+                {user?.avatar ? (
+                  <img src={user.avatar} alt="Avatar" className="mobile-avatar-img" />
+                ) : (
+                  user?.name?.charAt(0).toUpperCase() || 'U'
+                )}
               </div>
               <div>
                 <h3>{user?.name}</h3>

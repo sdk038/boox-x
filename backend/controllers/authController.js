@@ -2,6 +2,23 @@ const User = require('../models/User');
 const Settings = require('../models/Settings');
 const generateToken = require('../utils/generateToken');
 const logActivity = require('../utils/logActivity');
+const multer = require('multer');
+
+// Настройка multer для хранения в памяти (для конвертации в base64)
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // Макс 2MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Разрешены только изображения'), false);
+    }
+  }
+});
+
+exports.uploadAvatar = upload.single('avatar');
 
 // @desc    Регистрация пользователя
 // @route   POST /api/auth/register
@@ -38,6 +55,7 @@ exports.register = async (req, res) => {
           id: user._id,
           name: user.name,
           email: user.email,
+          avatar: user.avatar,
           role: user.role,
           createdAt: user.createdAt
         },
@@ -89,6 +107,7 @@ exports.login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        avatar: user.avatar,
         role: user.role,
         lastLogin: user.lastLogin,
         createdAt: user.createdAt
@@ -114,6 +133,7 @@ exports.getMe = async (req, res) => {
         name: user.name,
         email: user.email,
         avatar: user.avatar,
+        role: user.role,
         createdAt: user.createdAt
       }
     });
@@ -144,10 +164,57 @@ exports.updateProfile = async (req, res) => {
           id: updatedUser._id,
           name: updatedUser.name,
           email: updatedUser.email,
+          avatar: updatedUser.avatar,
+          role: updatedUser.role,
           createdAt: updatedUser.createdAt
         }
       });
     }
+  } catch (error) {
+    res.status(500).json({ message: 'Ошибка сервера', error: error.message });
+  }
+};
+
+// @desc    Загрузить аватар
+// @route   POST /api/auth/avatar
+// @access  Private
+exports.updateAvatar = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Пожалуйста, выберите изображение' });
+    }
+
+    // Конвертируем в base64 data URL
+    const base64 = req.file.buffer.toString('base64');
+    const dataUrl = `data:${req.file.mimetype};base64,${base64}`;
+
+    const user = await User.findById(req.user.id);
+    user.avatar = dataUrl;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Аватар обновлен',
+      avatar: dataUrl
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Ошибка сервера', error: error.message });
+  }
+};
+
+// @desc    Удалить аватар
+// @route   DELETE /api/auth/avatar
+// @access  Private
+exports.deleteAvatar = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    user.avatar = null;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Аватар удален'
+    });
   } catch (error) {
     res.status(500).json({ message: 'Ошибка сервера', error: error.message });
   }

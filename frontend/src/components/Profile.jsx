@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { authAPI } from '../services/api';
 
-const Profile = ({ user }) => {
+const Profile = ({ user, onUserUpdate }) => {
   const [editMode, setEditMode] = useState(false);
   const [profileData, setProfileData] = useState({
     name: user?.name || '',
@@ -11,6 +11,9 @@ const Profile = ({ user }) => {
     phone: user?.phone || ''
   });
   const [saveStatus, setSaveStatus] = useState('');
+  const [avatarPreview, setAvatarPreview] = useState(user?.avatar || null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef(null);
 
   const handleSave = async () => {
     try {
@@ -45,6 +48,83 @@ const Profile = ({ user }) => {
     setEditMode(false);
   };
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Проверка размера (макс 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setSaveStatus('❌ Файл слишком большой (макс 2MB)');
+      setTimeout(() => setSaveStatus(''), 3000);
+      return;
+    }
+
+    // Проверка типа
+    if (!file.type.startsWith('image/')) {
+      setSaveStatus('❌ Разрешены только изображения');
+      setTimeout(() => setSaveStatus(''), 3000);
+      return;
+    }
+
+    // Превью
+    const reader = new FileReader();
+    reader.onload = (e) => setAvatarPreview(e.target.result);
+    reader.readAsDataURL(file);
+
+    // Загрузка
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+      const response = await authAPI.uploadAvatar(formData);
+      
+      if (response.data.success) {
+        // Обновляем пользователя в localStorage
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        currentUser.avatar = response.data.avatar;
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        
+        if (onUserUpdate) onUserUpdate({ ...user, avatar: response.data.avatar });
+        
+        setSaveStatus('✅ Аватар обновлен');
+        setTimeout(() => setSaveStatus(''), 2000);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки аватара:', error);
+      setSaveStatus('❌ Ошибка загрузки');
+      setAvatarPreview(user?.avatar || null);
+      setTimeout(() => setSaveStatus(''), 2000);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    try {
+      const response = await authAPI.deleteAvatar();
+      if (response.data.success) {
+        setAvatarPreview(null);
+        
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        currentUser.avatar = null;
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        
+        if (onUserUpdate) onUserUpdate({ ...user, avatar: null });
+        
+        setSaveStatus('✅ Аватар удален');
+        setTimeout(() => setSaveStatus(''), 2000);
+      }
+    } catch (error) {
+      console.error('Ошибка удаления аватара:', error);
+      setSaveStatus('❌ Ошибка удаления');
+      setTimeout(() => setSaveStatus(''), 2000);
+    }
+  };
+
   // Статистика пользователя
   const stats = [
     { label: 'Проектов', value: '8', icon: '🎯' },
@@ -70,9 +150,30 @@ const Profile = ({ user }) => {
         {/* Основная информация */}
         <div className="profile-header-card">
           <div className="profile-header-content">
-            <div className="profile-avatar-large">
-              {user?.name?.charAt(0).toUpperCase()}
+            <div className="profile-avatar-wrapper" onClick={handleAvatarClick}>
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="Avatar" className="profile-avatar-large profile-avatar-img" />
+              ) : (
+                <div className="profile-avatar-large">
+                  {user?.name?.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="profile-avatar-overlay">
+                {uploadingAvatar ? '⏳' : '📷'}
+              </div>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleAvatarChange}
+                accept="image/*"
+                style={{ display: 'none' }}
+              />
             </div>
+            {avatarPreview && (
+              <button className="btn-delete-avatar" onClick={(e) => { e.stopPropagation(); handleDeleteAvatar(); }}>
+                ✕ Удалить фото
+              </button>
+            )}
             <div className="profile-header-info">
               {editMode ? (
                 <input

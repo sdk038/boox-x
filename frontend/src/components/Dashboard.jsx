@@ -80,7 +80,11 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('boards');
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [isSidebarPinned, setIsSidebarPinned] = useState(false);
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+
+  const handleUserUpdate = (updatedUser) => {
+    if (updateUser) updateUser(updatedUser);
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -91,7 +95,7 @@ const Dashboard = () => {
       case 'files':
         return <Files />;
       case 'profile':
-        return <Profile user={user} />;
+        return <Profile user={user} onUserUpdate={handleUserUpdate} />;
       case 'settings':
         return <Settings user={user} />;
       case 'admin':

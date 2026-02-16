@@ -46,6 +46,21 @@
   font-size: 18px;
   font-weight: bold;
   margin: 34px 0 40px;
+  overflow: hidden;
+}
+
+.left .avatar .avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.mobile-menu-avatar .mobile-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .left img {
@@ -454,7 +469,6 @@ body.dark-theme .pin-button:hover {
   color: #f0f0f0;
 }
 
-/* Мобильная навигация в светлой теме — светлый стиль */
 @media (max-width: 768px) {
   body:not(.dark-theme) .mobile-nav {
     background: #ffffff;

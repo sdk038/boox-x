@@ -94,13 +94,19 @@ export const AuthProvider = ({ children }) => {
     // Не удаляем darkMode — тема остаётся для страницы логина
   };
 
+  const updateUser = (updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+  };
+
   const value = {
     user,
     isAuthenticated,
     loading,
     register,
     login,
-    logout
+    logout,
+    updateUser
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
