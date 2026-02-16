@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './Sidebar';
 import AdminPanel from './AdminPanel';
 import AIAssistant from './AIAssistant';
@@ -8,6 +8,34 @@ import Settings from './Settings';
 import Profile from './Profile';
 import { useAuth } from '../context/AuthContext';
 import '../pages/Dashboard.css';
+
+// Маппинг табов на URL-хэши
+const TAB_ROUTES = {
+  home: 'home',
+  boards: 'boards',
+  files: 'files',
+  profile: 'profile',
+  settings: 'settings',
+  admin: 'admin',
+  ai: 'ai'
+};
+
+// Названия страниц для title
+const TAB_TITLES = {
+  home: 'Главная',
+  boards: 'Доски',
+  files: 'Файлы',
+  profile: 'Профиль',
+  settings: 'Настройки',
+  admin: 'Админ панель',
+  ai: 'AI Ассистент'
+};
+
+// Получить таб из хэша URL
+const getTabFromHash = () => {
+  const hash = window.location.hash.replace('#/', '').replace('#', '');
+  return TAB_ROUTES[hash] ? hash : 'boards';
+};
 
 const HomeContent = ({ user }) => {
   return (
@@ -77,10 +105,36 @@ const HomeContent = ({ user }) => {
 };
 
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState('boards');
+  const [activeTab, setActiveTab] = useState(getTabFromHash);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [isSidebarPinned, setIsSidebarPinned] = useState(false);
   const { user, updateUser } = useAuth();
+
+  // Обновляем URL хэш при смене таба
+  const handleTabChange = useCallback((tab) => {
+    setActiveTab(tab);
+    window.location.hash = `#/${tab}`;
+    document.title = `${TAB_TITLES[tab] || 'Daler AI'} — Daler AI`;
+  }, []);
+
+  // Слушаем кнопки назад/вперед в браузере
+  useEffect(() => {
+    const handleHashChange = () => {
+      const tab = getTabFromHash();
+      setActiveTab(tab);
+      document.title = `${TAB_TITLES[tab] || 'Daler AI'} — Daler AI`;
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+
+    // Устанавливаем хэш при первом рендере если его нет
+    if (!window.location.hash) {
+      window.location.hash = '#/boards';
+    }
+    document.title = `${TAB_TITLES[activeTab] || 'Daler AI'} — Daler AI`;
+
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleUserUpdate = (updatedUser) => {
     if (updateUser) updateUser(updatedUser);
@@ -111,7 +165,7 @@ const Dashboard = () => {
     <div className="dashboard">
       <Sidebar 
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         onExpandChange={setIsSidebarExpanded}
         isPinned={isSidebarPinned}
         onPinToggle={() => setIsSidebarPinned(!isSidebarPinned)}
