@@ -99,6 +99,8 @@ export const adminAPI = {
     return api.get(url);
   },
   getUserActivity: (userId) => api.get(`/admin/users/${userId}/activity`),
+  getUserMonitor: (userId) => api.get(`/admin/users/${userId}/monitor`),
+  getMonitoringSummary: () => api.get('/admin/monitoring'),
   updateUserRole: (userId, role) => api.put(`/admin/users/${userId}/role`, { role }),
   deleteUser: (userId) => api.delete(`/admin/users/${userId}`),
   getActivityChart: (days = 7) => api.get(`/admin/activity/chart?days=${days}`)
@@ -118,6 +120,14 @@ export const aiAPI = {
     api.post('/ai/chat', { message, context }),
   generatePresentation: (topic, slidesCount = 8, style = 'modern') =>
     api.post('/ai/generate-presentation', { topic, slidesCount, style })
+};
+
+// Tracking API
+export const trackingAPI = {
+  track: (action, details = '', page = '', metadata = {}) => 
+    api.post('/track', { action, details, page, metadata }).catch(() => {}), // Не блокируем при ошибке
+  trackBatch: (events) => 
+    api.post('/track/batch', { events }).catch(() => {})
 };
 
 export default api;

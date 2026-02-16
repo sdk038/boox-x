@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { settingsAPI, authAPI } from '../services/api';
+import { settingsAPI, authAPI, trackingAPI } from '../services/api';
 
 const Settings = ({ user }) => {
   // Инициализируем darkMode из localStorage
@@ -66,6 +66,7 @@ const Settings = ({ user }) => {
     // Применяем тему сразу (до сохранения на сервер)
     if (setting === 'darkMode') {
       applyTheme(newSettings.darkMode);
+      trackingAPI.track('change_theme', `Тема: ${newSettings.darkMode ? 'тёмная' : 'светлая'}`, 'settings');
     }
 
     // Сохраняем в backend

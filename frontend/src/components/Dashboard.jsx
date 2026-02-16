@@ -7,6 +7,7 @@ import Files from './Files';
 import Settings from './Settings';
 import Profile from './Profile';
 import { useAuth } from '../context/AuthContext';
+import { trackingAPI } from '../services/api';
 import '../pages/Dashboard.css';
 
 // Маппинг табов на URL-хэши
@@ -110,11 +111,13 @@ const Dashboard = () => {
   const [isSidebarPinned, setIsSidebarPinned] = useState(false);
   const { user, updateUser } = useAuth();
 
-  // Обновляем URL хэш при смене таба
+  // Обновляем URL хэш при смене таба + трекинг
   const handleTabChange = useCallback((tab) => {
     setActiveTab(tab);
     window.location.hash = `#/${tab}`;
     document.title = `${TAB_TITLES[tab] || 'Daler AI'} — Daler AI`;
+    // Отслеживаем переход на страницу
+    trackingAPI.track('page_view', `Просмотр: ${TAB_TITLES[tab] || tab}`, tab);
   }, []);
 
   // Слушаем кнопки назад/вперед в браузере

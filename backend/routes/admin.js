@@ -5,6 +5,8 @@ const {
   getAllUsers,
   getActivity,
   getUserActivity,
+  getUserMonitor,
+  getMonitoringSummary,
   updateUserRole,
   deleteUser,
   getActivityChart
@@ -20,9 +22,13 @@ router.use(adminOnly);
 router.get('/stats', getStats);
 router.get('/activity/chart', getActivityChart);
 
+// Мониторинг
+router.get('/monitoring', getMonitoringSummary);
+
 // Пользователи
 router.get('/users', getAllUsers);
 router.get('/users/:id/activity', getUserActivity);
+router.get('/users/:id/monitor', getUserMonitor);
 router.put('/users/:id/role', updateUserRole);
 router.delete('/users/:id', deleteUser);
 

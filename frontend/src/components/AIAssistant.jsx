@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { aiAPI } from '../services/api';
+import { aiAPI, trackingAPI } from '../services/api';
 import '../pages/AIAssistant.css';
 
 
@@ -350,6 +350,7 @@ const AIAssistant = () => {
       setLoading(true);
       setError('');
       
+      trackingAPI.track('ai_generate_project', `Генерация проекта: ${projectDescription.substring(0, 80)}`, 'ai');
       const response = await aiAPI.generateProject(projectDescription, projectPreferences);
       
       if (response.data.success) {
@@ -442,6 +443,7 @@ const AIAssistant = () => {
     try {
       setLoading(true);
       setError('');
+      trackingAPI.track('ai_generate_presentation', `Презентация: ${presTopic}`, 'ai');
       const response = await aiAPI.generatePresentation(presTopic, presSlides, presStyle);
       if (response.data.success) {
         setPresentation(response.data.presentation);

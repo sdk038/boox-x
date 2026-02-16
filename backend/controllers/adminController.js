@@ -264,6 +264,254 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
+// @desc    Детальный мониторинг пользователя
+// @route   GET /api/admin/users/:id/monitor
+// @access  Private/Admin
+exports.getUserMonitor = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    const user = await User.findById(userId).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'Пользователь не найден' });
+    }
+
+    // Последние 200 действий пользователя
+    const activities = await ActivityLog.find({ user: userId })
+      .sort('-timestamp')
+      .limit(200);
+
+    // Статистика по типам действий
+    const actionStats = await ActivityLog.aggregate([
+      { $match: { user: user._id } },
+      {
+        $group: {
+          _id: '$action',
+          count: { $sum: 1 },
+          lastTime: { $max: '$timestamp' }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    // Посещённые страницы
+    const pageViews = await ActivityLog.aggregate([
+      { $match: { user: user._id, page: { $exists: true, $ne: '' } } },
+      {
+        $group: {
+          _id: '$page',
+          count: { $sum: 1 },
+          lastVisit: { $max: '$timestamp' }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    // Устройства пользователя
+    const devices = await ActivityLog.aggregate([
+      { $match: { user: user._id, device: { $exists: true, $ne: null } } },
+      {
+        $group: {
+          _id: { device: '$device', browser: '$browser', os: '$os' },
+          count: { $sum: 1 },
+          lastSeen: { $max: '$timestamp' }
+        }
+      },
+      { $sort: { lastSeen: -1 } }
+    ]);
+
+    // AI использование
+    const aiUsage = await ActivityLog.aggregate([
+      { 
+        $match: { 
+          user: user._id, 
+          action: { $in: ['ai_chat', 'ai_generate_project', 'ai_create_project', 'ai_generate_task', 'ai_analyze_project', 'ai_generate_presentation'] }
+        }
+      },
+      {
+        $group: {
+          _id: '$action',
+          count: { $sum: 1 },
+          lastUsed: { $max: '$timestamp' }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    // Активность по часам за последние 7 дней
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const hourlyActivity = await ActivityLog.aggregate([
+      { $match: { user: user._id, timestamp: { $gte: sevenDaysAgo } } },
+      {
+        $group: {
+          _id: { $hour: '$timestamp' },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // Активность по дням за последние 30 дней
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const dailyActivity = await ActivityLog.aggregate([
+      { $match: { user: user._id, timestamp: { $gte: thirtyDaysAgo } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // Поисковые запросы
+    const searches = await ActivityLog.find({ 
+      user: userId, 
+      action: 'search' 
+    })
+    .sort('-timestamp')
+    .limit(50)
+    .select('details metadata timestamp');
+
+    // Общая статистика
+    const totalActions = await ActivityLog.countDocuments({ user: userId });
+    const firstAction = await ActivityLog.findOne({ user: userId }).sort('timestamp');
+    const lastAction = await ActivityLog.findOne({ user: userId }).sort('-timestamp');
+
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin
+      },
+      monitoring: {
+        totalActions,
+        firstAction: firstAction?.timestamp,
+        lastAction: lastAction?.timestamp,
+        actionStats,
+        pageViews,
+        devices,
+        aiUsage,
+        hourlyActivity,
+        dailyActivity,
+        searches,
+        recentActivity: activities
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Ошибка сервера', error: error.message });
+  }
+};
+
+// @desc    Общая сводка мониторинга
+// @route   GET /api/admin/monitoring
+// @access  Private/Admin
+exports.getMonitoringSummary = async (req, res) => {
+  try {
+    const now = new Date();
+    const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
+    const oneHourAgo = new Date(now - 60 * 60 * 1000);
+
+    // Активные пользователи за последний час
+    const activeLastHour = await ActivityLog.distinct('user', {
+      timestamp: { $gte: oneHourAgo }
+    });
+
+    // Активные пользователи за последние 24 часа
+    const activeLast24h = await ActivityLog.distinct('user', {
+      timestamp: { $gte: oneDayAgo }
+    });
+
+    // Популярные страницы за 24 часа
+    const popularPages = await ActivityLog.aggregate([
+      { $match: { timestamp: { $gte: oneDayAgo }, page: { $exists: true, $ne: '' } } },
+      {
+        $group: {
+          _id: '$page',
+          views: { $sum: 1 },
+          uniqueUsers: { $addToSet: '$user' }
+        }
+      },
+      {
+        $project: {
+          page: '$_id',
+          views: 1,
+          uniqueUsers: { $size: '$uniqueUsers' }
+        }
+      },
+      { $sort: { views: -1 } },
+      { $limit: 10 }
+    ]);
+
+    // Топ действий за 24 часа
+    const topActions = await ActivityLog.aggregate([
+      { $match: { timestamp: { $gte: oneDayAgo } } },
+      {
+        $group: {
+          _id: '$action',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 15 }
+    ]);
+
+    // Распределение устройств
+    const deviceStats = await ActivityLog.aggregate([
+      { $match: { timestamp: { $gte: oneDayAgo }, device: { $exists: true, $ne: null } } },
+      {
+        $group: {
+          _id: '$device',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    // Последние действия (real-time лента)
+    const latestActions = await ActivityLog.find()
+      .populate('user', 'name email avatar')
+      .sort('-timestamp')
+      .limit(30);
+
+    // Активность по часам сегодня
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const hourlyToday = await ActivityLog.aggregate([
+      { $match: { timestamp: { $gte: todayStart } } },
+      {
+        $group: {
+          _id: { $hour: '$timestamp' },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    res.json({
+      success: true,
+      monitoring: {
+        activeUsersLastHour: activeLastHour.length,
+        activeUsersLast24h: activeLast24h.length,
+        popularPages,
+        topActions,
+        deviceStats,
+        latestActions,
+        hourlyToday
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Ошибка сервера', error: error.message });
+  }
+};
+
 // @desc    Получить статистику активности по дням
 // @route   GET /api/admin/activity/chart
 // @access  Private/Admin

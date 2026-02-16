@@ -1,6 +1,7 @@
 const { getModel } = require('../config/gemini');
 const Board = require('../models/Board');
 const Task = require('../models/Task');
+const logActivity = require('../utils/logActivity');
 
 // ============================================
 // 🤖 Умный AI контроллер с автоматическим fallback
@@ -751,6 +752,9 @@ exports.chat = async (req, res) => {
     if (!message) {
       return res.status(400).json({ message: 'Сообщение не может быть пустым' });
     }
+
+    // Логируем AI чат
+    await logActivity(req.user._id, 'ai_chat', `Запрос: ${message.substring(0, 100)}`, req);
 
     // Пробуем настоящий AI
     const prompt = `Ты - умный AI-ассистент. Ты помогаешь с ЛЮБЫМИ вопросами:

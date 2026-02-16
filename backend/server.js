@@ -37,6 +37,7 @@ app.use('/api/files', require('./routes/files'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/ai', require('./routes/ai'));
+app.use('/api/track', require('./routes/tracking'));
 
 app.use('/uploads', express.static('uploads'));
 
@@ -56,7 +57,7 @@ app.get('/', (req, res) => {
 });
 
 
-// 404 для несуществующих API маршрутов
+
 app.use((req, res) => {
   res.status(404).json({ message: 'Маршрут не найден' });
 });
