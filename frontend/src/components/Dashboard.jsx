@@ -35,7 +35,7 @@ const TAB_TITLES = {
 // Получить таб из хэша URL
 const getTabFromHash = () => {
   const hash = window.location.hash.replace('#/', '').replace('#', '');
-  return TAB_ROUTES[hash] ? hash : 'boards';
+  return TAB_ROUTES[hash] ? hash : 'home';
 };
 
 // Время суток для приветствия
@@ -318,7 +318,7 @@ const Dashboard = () => {
 
     // Устанавливаем хэш при первом рендере если его нет
     if (!window.location.hash) {
-      window.location.hash = '#/boards';
+      window.location.hash = '#/home';
     }
     document.title = `${TAB_TITLES[activeTab] || 'Daler AI'} — Daler AI`;
 
@@ -346,7 +346,7 @@ const Dashboard = () => {
       case 'ai':
         return <AIAssistant />;
       default:
-        return <Boards />;
+        return <HomeContent user={user} onNavigate={handleTabChange} />;
     }
   };
 
