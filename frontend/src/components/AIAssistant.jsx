@@ -201,10 +201,31 @@ const PresentationViewer = ({ presentation, onClose }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const viewerRef = useRef(null);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
   const slides = presentation.slides || [];
 
   const goNext = () => setCurrentSlide(prev => Math.min(prev + 1, slides.length - 1));
   const goPrev = () => setCurrentSlide(prev => Math.max(prev - 1, 0));
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    const diff = touchStartX.current - touchEndX.current;
+    const minSwipe = 50;
+    if (Math.abs(diff) > minSwipe) {
+      if (diff > 0) goNext();
+      else goPrev();
+    }
+    touchStartX.current = 0;
+    touchEndX.current = 0;
+  };
 
   useEffect(() => {
     const handleKey = (e) => {
@@ -290,7 +311,12 @@ const PresentationViewer = ({ presentation, onClose }) => {
         </div>
       </div>
 
-      <div className="pres-stage">
+      <div 
+        className="pres-stage"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <button className="pres-nav-btn prev" onClick={goPrev} disabled={currentSlide === 0}>‹</button>
         <div className="pres-slide-frame">
           <SlideRenderer slide={slides[currentSlide]} index={currentSlide} total={slides.length} />
