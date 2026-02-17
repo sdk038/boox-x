@@ -59,6 +59,7 @@ const timeAgo = (date) => {
   return d.toLocaleDateString('ru-RU');
 };
 
+// eslint-disable-next-line no-unused-vars
 const getActivityIcon = (action) => {
   const icons = {
     'login': '🔐', 'register': '✨', 'logout': '👋',
@@ -73,6 +74,7 @@ const getActivityIcon = (action) => {
   return icons[action] || '📌';
 };
 
+// eslint-disable-next-line no-unused-vars
 const getActivityText = (action) => {
   const texts = {
     'login': 'Вход в систему', 'register': 'Регистрация', 'logout': 'Выход из системы',
