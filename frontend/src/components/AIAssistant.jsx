@@ -343,6 +343,7 @@ const PresentationViewer = ({ presentation, onClose }) => {
 const AIAssistant = () => {
   const [activeMode, setActiveMode] = useState('chat');
   const [loading, setLoading] = useState(false);
+  const [isWaiting, setIsWaiting] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
@@ -409,6 +410,37 @@ const AIAssistant = () => {
     }
   };
 
+  const typeText = (fullText, source) => {
+    const msgId = Date.now();
+    const aiMessage = { 
+      role: 'assistant', 
+      content: '', 
+      source,
+      typing: true,
+      id: msgId
+    };
+    setChatMessages(prev => [...prev, aiMessage]);
+
+    let i = 0;
+    const chunkSize = 3;
+    const speed = 15;
+    
+    const typeInterval = setInterval(() => {
+      i += chunkSize;
+      if (i >= fullText.length) {
+        setChatMessages(prev => prev.map(m => 
+          m.id === msgId ? { ...m, content: fullText, typing: false } : m
+        ));
+        clearInterval(typeInterval);
+        setLoading(false);
+      } else {
+        setChatMessages(prev => prev.map(m => 
+          m.id === msgId ? { ...m, content: fullText.slice(0, i) } : m
+        ));
+      }
+    }, speed);
+  };
+
   const handleChat = async () => {
     if (!chatInput.trim() || loading) return;
 
@@ -419,33 +451,29 @@ const AIAssistant = () => {
 
     try {
       setLoading(true);
+      setIsWaiting(true);
       setError('');
       
-      // Собираем контекст из последних сообщений
       const recentMessages = chatMessages.slice(-6).map(m => 
         `${m.role === 'user' ? 'Пользователь' : 'AI'}: ${m.content}`
       ).join('\n');
       
       const response = await aiAPI.chat(currentInput, recentMessages || null);
+      setIsWaiting(false);
       
       if (response.data.success) {
-        const aiMessage = { 
-          role: 'assistant', 
-          content: response.data.reply,
-          source: response.data.source 
-        };
-        setChatMessages(prev => [...prev, aiMessage]);
+        typeText(response.data.reply, response.data.source);
       }
     } catch (err) {
+      setIsWaiting(false);
       const serverMessage = err.response?.data?.message;
       const errorMsg = { 
         role: 'assistant', 
         content: serverMessage || '⚠️ Произошла ошибка. Попробуйте ещё раз.' 
       };
       setChatMessages(prev => [...prev, errorMsg]);
-      setError('');
-    } finally {
       setLoading(false);
+      setError('');
     }
   };
 
@@ -714,13 +742,16 @@ const AIAssistant = () => {
                         <span>{msg.content}</span>
                       </div>
                     ) : (
-                      <div className="ai-response-block">
+                      <div className={`ai-response-block ${msg.typing ? 'typing' : ''}`}>
                         <div className="ai-response-header">
                           <span className="ai-badge">🤖 AI</span>
-                          {msg.source && (
+                          {msg.source && !msg.typing && (
                             <span className="ai-source-badge">
                               {msg.source === 'gemini' ? '✨ Daler' : '📝 Demo'}
                             </span>
+                          )}
+                          {msg.typing && (
+                            <span className="ai-source-badge">⌨️ печатает...</span>
                           )}
                         </div>
                         <div className="ai-response-body">
@@ -732,11 +763,12 @@ const AIAssistant = () => {
                 ))}
               </>
             )}
-            {loading && (
+            {isWaiting && (
               <div className="chat-msg assistant">
                 <div className="ai-response-block">
                   <div className="ai-response-header">
                     <span className="ai-badge">🤖 AI</span>
+                    <span className="ai-source-badge">🤔 думает...</span>
                   </div>
                   <div className="ai-response-body">
                     <div className="typing-indicator">
