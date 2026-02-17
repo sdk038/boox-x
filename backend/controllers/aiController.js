@@ -837,35 +837,20 @@ ${context ? `Контекст беседы: ${context}` : ''}
       });
     }
 
-    // Fallback на DEMO
-    console.log('⚡ Используем DEMO режим для чата');
-    const reply = getDemoChatResponse(message);
-
-    res.json({
-      success: true,
-      reply,
-      demo: true,
-      timestamp: new Date(),
-      source: 'demo'
+    // AI не смог ответить - возвращаем ошибку
+    console.error('❌ Gemini API не доступен:', aiResult.error);
+    res.status(503).json({
+      success: false,
+      message: '⚠️ AI временно недоступен. Попробуйте через несколько секунд.',
+      error: aiResult.error
     });
 
   } catch (error) {
     console.error('Ошибка чата:', error);
-    // Даже при полном падении - даем DEMO ответ
-    try {
-      const reply = getDemoChatResponse(req.body.message || 'привет');
-      return res.json({
-        success: true,
-        reply,
-        demo: true,
-        timestamp: new Date(),
-        source: 'demo'
-      });
-    } catch (e) {
-      res.status(500).json({ 
-        message: 'Ошибка чата с AI',
-        error: error.message 
-      });
-    }
+    res.status(500).json({ 
+      success: false,
+      message: '⚠️ Ошибка при обращении к AI. Попробуйте ещё раз.',
+      error: error.message 
+    });
   }
 };

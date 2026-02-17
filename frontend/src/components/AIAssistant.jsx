@@ -411,9 +411,10 @@ const AIAssistant = () => {
         setChatMessages(prev => [...prev, aiMessage]);
       }
     } catch (err) {
+      const serverMessage = err.response?.data?.message;
       const errorMsg = { 
         role: 'assistant', 
-        content: '⚠️ Произошла ошибка. Попробуйте ещё раз.' 
+        content: serverMessage || '⚠️ Произошла ошибка. Попробуйте ещё раз.' 
       };
       setChatMessages(prev => [...prev, errorMsg]);
       setError('');
