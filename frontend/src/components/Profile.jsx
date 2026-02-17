@@ -1,5 +1,5 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { authAPI } from '../services/api';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { authAPI, boardsAPI, tasksAPI, filesAPI } from '../services/api';
 
 const Profile = ({ user, onUserUpdate }) => {
   const [editMode, setEditMode] = useState(false);
@@ -157,21 +157,42 @@ const Profile = ({ user, onUserUpdate }) => {
     }
   };
 
-  // Статистика пользователя
+  const [realStats, setRealStats] = useState({ boards: 0, tasks: 0, files: 0 });
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const [boardsRes, tasksRes, filesRes] = await Promise.all([
+          boardsAPI.getAll().catch(() => ({ data: { boards: [] } })),
+          tasksAPI.getAll().catch(() => ({ data: { tasks: [] } })),
+          filesAPI.getAll().catch(() => ({ data: { files: [] } }))
+        ]);
+        const boards = boardsRes.data.boards || boardsRes.data || [];
+        const tasks = tasksRes.data.tasks || tasksRes.data || [];
+        const files = filesRes.data.files || filesRes.data || [];
+        setRealStats({
+          boards: Array.isArray(boards) ? boards.length : 0,
+          tasks: Array.isArray(tasks) ? tasks.length : 0,
+          files: Array.isArray(files) ? files.length : 0
+        });
+      } catch (e) {
+        console.error('Ошибка загрузки статистики:', e);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+    loadStats();
+  }, []);
+
   const stats = [
-    { label: 'Проектов', value: '8', icon: '🎯' },
-    { label: 'Задач выполнено', value: '124', icon: '✅' },
-    { label: 'В работе', value: '15', icon: '⏳' },
-    { label: 'На проверке', value: '7', icon: '👀' }
+    { label: 'Досок', value: statsLoading ? '...' : realStats.boards, icon: '📋' },
+    { label: 'Задач', value: statsLoading ? '...' : realStats.tasks, icon: '✅' },
+    { label: 'Файлов', value: statsLoading ? '...' : realStats.files, icon: '📁' }
   ];
 
-  // Последняя активность
-  const recentActivity = [
-    { action: 'Создал задачу', project: 'Маркетинг', time: '2 часа назад', icon: '✨' },
-    { action: 'Завершил задачу', project: 'Дизайн', time: '5 часов назад', icon: '✅' },
-    { action: 'Добавил комментарий', project: 'Разработка', time: 'Вчера', icon: '💬' },
-    { action: 'Загрузил файл', project: 'Маркетинг', time: '2 дня назад', icon: '📎' }
-  ];
+  const memberDays = Math.floor((Date.now() - new Date(user?.createdAt || Date.now()).getTime()) / (1000 * 60 * 60 * 24));
+  const memberText = memberDays === 0 ? 'Сегодня' : memberDays === 1 ? '1 день' : `${memberDays} дн.`;
 
   return (
     <div className="content-section profile-page">
@@ -358,21 +379,37 @@ const Profile = ({ user, onUserUpdate }) => {
           </div>
         </div>
 
-        {/* Последняя активность */}
+        {/* Членство */}
         <div className="profile-activity-card">
-          <h3>⚡ Последняя активность</h3>
+          <h3>🏆 Ваш аккаунт</h3>
           <div className="profile-activity-list">
-            {recentActivity.map((activity, index) => (
-              <div key={index} className="profile-activity-item">
-                <div className="profile-activity-icon">{activity.icon}</div>
-                <div className="profile-activity-content">
-                  <p className="profile-activity-action">
-                    <strong>{activity.action}</strong> в проекте "{activity.project}"
-                  </p>
-                  <span className="profile-activity-time">{activity.time}</span>
-                </div>
+            <div className="profile-activity-item">
+              <div className="profile-activity-icon">📅</div>
+              <div className="profile-activity-content">
+                <p className="profile-activity-action">
+                  <strong>Дата регистрации:</strong> {new Date(user?.createdAt || Date.now()).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+                <span className="profile-activity-time">С нами уже {memberText}</span>
               </div>
-            ))}
+            </div>
+            <div className="profile-activity-item">
+              <div className="profile-activity-icon">{user?.role === 'admin' ? '👑' : '👤'}</div>
+              <div className="profile-activity-content">
+                <p className="profile-activity-action">
+                  <strong>Роль:</strong> {user?.role === 'admin' ? 'Администратор' : 'Пользователь'}
+                </p>
+                <span className="profile-activity-time">{user?.role === 'admin' ? 'Полный доступ к системе' : 'Стандартный доступ'}</span>
+              </div>
+            </div>
+            <div className="profile-activity-item">
+              <div className="profile-activity-icon">📊</div>
+              <div className="profile-activity-content">
+                <p className="profile-activity-action">
+                  <strong>Всего создано:</strong> {statsLoading ? '...' : `${realStats.boards} досок, ${realStats.tasks} задач, ${realStats.files} файлов`}
+                </p>
+                <span className="profile-activity-time">Ваша продуктивность</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
