@@ -191,8 +191,6 @@ const Profile = ({ user, onUserUpdate }) => {
     { label: 'Файлов', value: statsLoading ? '...' : realStats.files, icon: '📁' }
   ];
 
-  const memberDays = Math.floor((Date.now() - new Date(user?.createdAt || Date.now()).getTime()) / (1000 * 60 * 60 * 24));
-  const memberText = memberDays === 0 ? 'Сегодня' : memberDays === 1 ? '1 день' : `${memberDays} дн.`;
 
   return (
     <div className="content-section profile-page">
@@ -288,130 +286,6 @@ const Profile = ({ user, onUserUpdate }) => {
           </div>
         </div>
 
-        {/* Детальная информация */}
-        <div className="profile-details-card">
-          <h3>📋 Информация</h3>
-          
-          <div className="profile-field">
-            <label>👤 Имя</label>
-            {editMode ? (
-              <input
-                type="text"
-                value={profileData.name}
-                onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                placeholder="Введите имя"
-              />
-            ) : (
-              <p>{user?.name}</p>
-            )}
-          </div>
-
-          <div className="profile-field">
-            <label>📧 Email</label>
-            {editMode ? (
-              <input
-                type="email"
-                value={profileData.email}
-                onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                placeholder="Введите email"
-              />
-            ) : (
-              <p>{user?.email}</p>
-            )}
-          </div>
-
-          <div className="profile-field">
-            <label>📝 О себе</label>
-            {editMode ? (
-              <textarea
-                value={profileData.bio}
-                onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
-                placeholder="Расскажите о себе"
-                rows="3"
-              />
-            ) : (
-              <p>{profileData.bio}</p>
-            )}
-          </div>
-
-          <div className="profile-field">
-            <label>📍 Местоположение</label>
-            {editMode ? (
-              <input
-                type="text"
-                value={profileData.location}
-                onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
-                placeholder="Город, страна"
-              />
-            ) : (
-              <p>{profileData.location || 'Не указано'}</p>
-            )}
-          </div>
-
-          <div className="profile-field">
-            <label>📱 Телефон</label>
-            {editMode ? (
-              <input
-                type="tel"
-                value={profileData.phone}
-                onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                placeholder="+7 (999) 123-45-67"
-              />
-            ) : (
-              <p>{profileData.phone || 'Не указано'}</p>
-            )}
-          </div>
-
-          <div className="profile-field">
-            <label>📅 Дата регистрации</label>
-            <p>{new Date(user?.createdAt || Date.now()).toLocaleDateString('ru-RU', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}</p>
-          </div>
-
-          <div className="profile-field">
-            <label>🔐 Роль</label>
-            <p className="profile-role-badge">
-              {user?.role === 'admin' ? '👑 Администратор' : '👤 Пользователь'}
-            </p>
-          </div>
-        </div>
-
-        {/* Членство */}
-        <div className="profile-activity-card">
-          <h3>🏆 Ваш аккаунт</h3>
-          <div className="profile-activity-list">
-            <div className="profile-activity-item">
-              <div className="profile-activity-icon">📅</div>
-              <div className="profile-activity-content">
-                <p className="profile-activity-action">
-                  <strong>Дата регистрации:</strong> {new Date(user?.createdAt || Date.now()).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' })}
-                </p>
-                <span className="profile-activity-time">С нами уже {memberText}</span>
-              </div>
-            </div>
-            <div className="profile-activity-item">
-              <div className="profile-activity-icon">{user?.role === 'admin' ? '👑' : '👤'}</div>
-              <div className="profile-activity-content">
-                <p className="profile-activity-action">
-                  <strong>Роль:</strong> {user?.role === 'admin' ? 'Администратор' : 'Пользователь'}
-                </p>
-                <span className="profile-activity-time">{user?.role === 'admin' ? 'Полный доступ к системе' : 'Стандартный доступ'}</span>
-              </div>
-            </div>
-            <div className="profile-activity-item">
-              <div className="profile-activity-icon">📊</div>
-              <div className="profile-activity-content">
-                <p className="profile-activity-action">
-                  <strong>Всего создано:</strong> {statsLoading ? '...' : `${realStats.boards} досок, ${realStats.tasks} задач, ${realStats.files} файлов`}
-                </p>
-                <span className="profile-activity-time">Ваша продуктивность</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Модалка увеличенного аватара */}

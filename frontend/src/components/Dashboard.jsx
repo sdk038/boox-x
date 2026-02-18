@@ -9,25 +9,21 @@ const AIAssistant = lazy(() => import('./AIAssistant'));
 const Boards = lazy(() => import('./Boards'));
 const Files = lazy(() => import('./Files'));
 const Settings = lazy(() => import('./Settings'));
-const Profile = lazy(() => import('./Profile'));
 
 // Маппинг табов на URL-хэши
 const TAB_ROUTES = {
   home: 'home',
   boards: 'boards',
   files: 'files',
-  profile: 'profile',
   settings: 'settings',
   admin: 'admin',
   ai: 'ai'
 };
 
-// Названия страниц для title
 const TAB_TITLES = {
   home: 'Главная',
   boards: 'Доски',
   files: 'Файлы',
-  profile: 'Профиль',
   settings: 'Настройки',
   admin: 'Админ панель',
   ai: 'AI Ассистент'
@@ -150,10 +146,10 @@ const HomeContent = ({ user, onNavigate }) => {
       color: '#10b981'
     },
     {
-      icon: '👤',
-      title: 'Профиль и настройки',
-      description: 'Настройте аватар, тему, уведомления — всё под вас',
-      action: 'profile',
+      icon: '⚙️',
+      title: 'Настройки',
+      description: 'Настройте тему, уведомления и язык — всё под вас',
+      action: 'settings',
       color: '#f59e0b'
     }
   ];
@@ -298,7 +294,7 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState(getTabFromHash);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [isSidebarPinned, setIsSidebarPinned] = useState(false);
-  const { user, updateUser } = useAuth();
+  const { user } = useAuth();
 
   // Обновляем URL хэш при смене таба + трекинг
   const handleTabChange = useCallback((tab) => {
@@ -328,10 +324,6 @@ const Dashboard = () => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleUserUpdate = (updatedUser) => {
-    if (updateUser) updateUser(updatedUser);
-  };
-
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
@@ -340,8 +332,6 @@ const Dashboard = () => {
         return <Boards />;
       case 'files':
         return <Files />;
-      case 'profile':
-        return <Profile user={user} onUserUpdate={handleUserUpdate} />;
       case 'settings':
         return <Settings user={user} />;
       case 'admin':

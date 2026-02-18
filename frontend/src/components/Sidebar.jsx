@@ -40,12 +40,7 @@ const Sidebar = ({ activeTab, setActiveTab, onExpandChange, isPinned, onPinToggl
         onMouseLeave={handleMouseLeave}
       >
         <div className="left">
-          <div 
-            className="avatar" 
-            onClick={() => setActiveTab('profile')}
-            style={{ cursor: 'pointer' }}
-            title="Мой профиль"
-          >
+          <div className="avatar" title={user?.name || 'Пользователь'}>
             {user?.avatar ? (
               <img src={user.avatar} alt="Avatar" className="avatar-img" />
             ) : (
@@ -192,9 +187,6 @@ const Sidebar = ({ activeTab, setActiveTab, onExpandChange, isPinned, onPinToggl
               </div>
             </div>
             <div className="mobile-menu-items">
-              <button onClick={() => handleMobileTabChange('profile')}>
-                <span>👤</span> Профиль
-              </button>
               <button onClick={() => handleMobileTabChange('files')}>
                 <span>📁</span> Файлы
               </button>
