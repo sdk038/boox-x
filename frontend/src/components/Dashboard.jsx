@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import Sidebar from './Sidebar';
-import AdminPanel from './AdminPanel';
-import AIAssistant from './AIAssistant';
-import Boards from './Boards';
-import Files from './Files';
-import Settings from './Settings';
-import Profile from './Profile';
 import { useAuth } from '../context/AuthContext';
 import { trackingAPI, boardsAPI, tasksAPI, filesAPI } from '../services/api';
 import '../pages/Dashboard.css';
+
+const AdminPanel = lazy(() => import('./AdminPanel'));
+const AIAssistant = lazy(() => import('./AIAssistant'));
+const Boards = lazy(() => import('./Boards'));
+const Files = lazy(() => import('./Files'));
+const Settings = lazy(() => import('./Settings'));
+const Profile = lazy(() => import('./Profile'));
 
 // Маппинг табов на URL-хэши
 const TAB_ROUTES = {
@@ -362,7 +363,9 @@ const Dashboard = () => {
         onPinToggle={() => setIsSidebarPinned(!isSidebarPinned)}
       />
       <div className={`dashboard-content ${(isSidebarExpanded || isSidebarPinned) ? 'sidebar-expanded' : ''}`}>
-        {renderContent()}
+        <Suspense fallback={<div className="content-section" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}><div className="spinner" /></div>}>
+          {renderContent()}
+        </Suspense>
       </div>
     </div>
   );

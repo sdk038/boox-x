@@ -842,12 +842,14 @@ ${context ? `Контекст беседы:\n${context}` : ''}
       });
     }
 
-    // AI не смог ответить - возвращаем ошибку
-    console.error('❌ Gemini API не доступен:', aiResult.error);
-    res.status(503).json({
-      success: false,
-      message: '⚠️ AI временно недоступен. Попробуйте через несколько секунд.',
-      error: aiResult.error
+    // AI не смог ответить - используем DEMO fallback
+    console.log('⚡ Используем DEMO режим для чата');
+    const demoReply = getDemoChatResponse(message);
+    return res.json({
+      success: true,
+      reply: demoReply,
+      timestamp: new Date(),
+      source: 'demo'
     });
 
   } catch (error) {
