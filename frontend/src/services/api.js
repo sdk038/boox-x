@@ -120,7 +120,7 @@ export const aiAPI = {
   chat: (message, context = null) => 
     api.post('/ai/chat', { message, context }),
   generatePresentation: (topic, slidesCount = 8, style = 'modern') =>
-    api.post('/ai/generate-presentation', { topic, slidesCount, style })
+    api.post('/ai/generate-presentation', { topic, slidesCount, style }, { timeout: 60000 })
 };
 
 // Tracking API

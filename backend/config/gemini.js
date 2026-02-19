@@ -8,4 +8,11 @@ const getModel = () => {
   });
 };
 
-module.exports = { genAI, getModel };
+const getModelWithSearch = () => {
+  return genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash',
+    tools: [{ googleSearch: {} }],
+  });
+};
+
+module.exports = { genAI, getModel, getModelWithSearch };

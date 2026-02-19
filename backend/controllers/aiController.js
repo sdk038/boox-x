@@ -1,4 +1,4 @@
-const { getModel } = require('../config/gemini');
+const { getModel, getModelWithSearch } = require('../config/gemini');
 const Board = require('../models/Board');
 const Task = require('../models/Task');
 const logActivity = require('../utils/logActivity');
@@ -17,15 +17,20 @@ const callGemini = async (prompt) => {
     return { success: true, text: response.text() };
   } catch (error) {
     console.error('⚠️ Gemini API ошибка:', error.message);
-    
-    // Если квота превышена или API недоступен
-    if (error.message?.includes('429') || error.message?.includes('quota') || 
-        error.message?.includes('404') || error.message?.includes('PERMISSION') ||
-        error.message?.includes('API_KEY') || error.message?.includes('fetch')) {
-      return { success: false, error: error.message, fallback: true };
-    }
-    
     return { success: false, error: error.message, fallback: true };
+  }
+};
+
+// Gemini + Google Search — для получения реальных данных из интернета
+const callGeminiWithSearch = async (prompt) => {
+  try {
+    const model = getModelWithSearch();
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return { success: true, text: response.text(), grounded: true };
+  } catch (error) {
+    console.error('⚠️ Gemini Search ошибка:', error.message, '— пробуем без поиска');
+    return callGemini(prompt);
   }
 };
 
@@ -193,88 +198,85 @@ const getDemoChatResponse = (message) => {
 };
 
 const getDemoPresentationResponse = (topic, count) => {
+  const t = topic.toLowerCase();
+
+  const demoData = {
+    ai: {
+      match: ['искусственн', 'интеллект', 'нейросет', 'машинн', 'ai ', 'deep learning', 'gpt', 'нейрон'],
+      title: 'Искусственный интеллект: настоящее и будущее',
+      slides: [
+        { type: 'content', title: 'Что такое ИИ', bullets: ['Искусственный интеллект — способность машин имитировать когнитивные функции человека', 'Основные направления: машинное обучение, NLP, компьютерное зрение, робототехника', 'Отец ИИ — Джон Маккарти, впервые ввёл термин в 1956 году на конференции в Дартмуте', 'Современный ИИ основан на нейронных сетях и архитектуре Transformer (2017)'], emoji: '🧠' },
+        { type: 'stats', title: 'ИИ в цифрах', stats: [{ value: '$184 млрд', label: 'Объём рынка ИИ в 2024 году' }, { value: '97 млн', label: 'Новых рабочих мест к 2025 (WEF)' }, { value: '77%', label: 'Компаний используют или изучают ИИ' }, { value: '2030', label: 'Год, когда ИИ добавит $15.7 трлн к ВВП' }], emoji: '📊' },
+        { type: 'two-columns', title: 'Возможности vs Риски', left: { heading: '✅ Возможности', items: ['Автоматизация рутинных задач', 'Диагностика болезней с точностью 94%+', 'Персонализация обучения', 'Оптимизация бизнес-процессов'] }, right: { heading: '⚠️ Риски', items: ['Замена рабочих мест', 'Дипфейки и дезинформация', 'Предвзятость алгоритмов', 'Вопросы конфиденциальности'] }, emoji: '⚖️' },
+        { type: 'quote', quote: 'Искусственный интеллект — это новое электричество.', author: 'Эндрю Ын, профессор Стэнфорда', emoji: '💡' },
+        { type: 'content', title: 'Применение ИИ в 2024-2025', bullets: ['ChatGPT набрал 100 млн пользователей за 2 месяца — рекорд среди приложений', 'ИИ в медицине: AlphaFold от DeepMind раскрыл структуру 200 млн белков', 'Автопилоты Tesla проехали более 1 миллиарда миль с использованием нейросетей', 'GitHub Copilot пишет до 46% кода разработчиков', 'ИИ-генерация изображений: DALL-E, Midjourney, Stable Diffusion'], emoji: '🚀' },
+      ]
+    },
+    climate: {
+      match: ['эколог', 'климат', 'потеплен', 'окружающ', 'загрязн', 'углерод', 'парников'],
+      title: 'Изменение климата: факты и решения',
+      slides: [
+        { type: 'content', title: 'Состояние климата', bullets: ['Средняя температура Земли выросла на 1.1°C с доиндустриальной эпохи', 'Концентрация CO₂ в атмосфере достигла 421 ppm — максимум за 800 000 лет', '2023 год стал самым жарким за всю историю наблюдений с 1850 года', 'Уровень мирового океана повысился на 21 см с 1900 года'], emoji: '🌡️' },
+        { type: 'stats', title: 'Климат в цифрах', stats: [{ value: '+1.1°C', label: 'Рост средней температуры' }, { value: '421 ppm', label: 'CO₂ в атмосфере' }, { value: '36.8 Гт', label: 'Выбросов CO₂ в 2023 году' }, { value: '2050', label: 'Цель углеродной нейтральности' }], emoji: '📈' },
+        { type: 'two-columns', title: 'Причины и последствия', left: { heading: 'Причины', items: ['Сжигание ископаемого топлива', 'Вырубка лесов', 'Промышленное сельское хозяйство', 'Индустриальные выбросы'] }, right: { heading: 'Последствия', items: ['Таяние ледников и повышение уровня океана', 'Экстремальные погодные явления', 'Потеря биоразнообразия', 'Угроза продовольственной безопасности'] }, emoji: '⚖️' },
+        { type: 'quote', quote: 'Мы — первое поколение, которое ощущает последствия изменения климата, и последнее, которое может с этим что-то сделать.', author: 'Барак Обама', emoji: '🌍' },
+        { type: 'content', title: 'Пути решения', bullets: ['Парижское соглашение (2015) — удержать потепление в пределах 1.5°C', 'Переход на возобновляемые источники энергии: солнце, ветер, водород', 'Электрификация транспорта — продажи EV выросли на 35% в 2023 году', 'Посадка деревьев: проект Trillion Tree Campaign', 'Технологии захвата углерода (CCS) — инвестиции $6.4 млрд в 2023'], emoji: '💚' },
+      ]
+    },
+    space: {
+      match: ['космос', 'космич', 'ракет', 'планет', 'марс', 'nasa', 'spacex', 'звёзд', 'звезд', 'галакт'],
+      title: 'Космические технологии: новая эра освоения',
+      slides: [
+        { type: 'content', title: 'Современная космонавтика', bullets: ['SpaceX совершил 96 успешных запусков в 2023 году — абсолютный рекорд', 'Starship — самая мощная ракета в истории: тяга 74.3 МН при старте', 'Программа Artemis NASA планирует вернуть людей на Луну к 2026 году', 'Телескоп James Webb обнаружил самые далёкие галактики на расстоянии 13.4 млрд световых лет'], emoji: '🚀' },
+        { type: 'stats', title: 'Космос в цифрах', stats: [{ value: '$469 млрд', label: 'Глобальный космический рынок' }, { value: '11 800+', label: 'Активных спутников на орбите' }, { value: '674', label: 'Человек побывали в космосе' }, { value: '2030-е', label: 'Планируемая миссия на Марс' }], emoji: '📊' },
+        { type: 'two-columns', title: 'Государство vs Частный сектор', left: { heading: '🏛️ Государственные', items: ['NASA (США) — бюджет $25.4 млрд', 'Роскосмос (Россия)', 'ESA (Европа)', 'CNSA (Китай) — станция Тяньгун'] }, right: { heading: '🏢 Частные', items: ['SpaceX — Starlink, Starship', 'Blue Origin — New Shepard', 'Virgin Galactic — космотуризм', 'Rocket Lab — малые запуски'] }, emoji: '⚖️' },
+        { type: 'quote', quote: 'Земля — колыбель разума, но нельзя вечно жить в колыбели.', author: 'Константин Циолковский', emoji: '🌍' },
+        { type: 'content', title: 'Будущее космоса', bullets: ['Колонизация Марса: Илон Маск планирует город на 1 млн человек к 2050', 'Космический туризм: билет на Blue Origin от $200 000', 'Добыча ресурсов на астероидах: оценочная стоимость $700 квинтиллионов', 'Starlink — глобальный интернет: 5 000+ спутников на орбите', 'Обнаружение экзопланет: подтверждено 5 500+ планет за пределами Солнечной системы'], emoji: '🔭' },
+      ]
+    },
+    crypto: {
+      match: ['крипт', 'биткоин', 'блокчейн', 'blockchain', 'bitcoin', 'ethereum', 'nft', 'defi', 'web3'],
+      title: 'Криптовалюты и блокчейн: технология будущего',
+      slides: [
+        { type: 'content', title: 'Основы блокчейна', bullets: ['Блокчейн — децентрализованная база данных с защитой от изменений', 'Биткоин создан в 2009 году анонимным Сатоши Накамото', 'Ethereum (2015) — первая платформа для смарт-контрактов, создатель Виталик Бутерин', 'Существует более 22 000 различных криптовалют'], emoji: '🔗' },
+        { type: 'stats', title: 'Крипторынок в цифрах', stats: [{ value: '$2.5 трлн', label: 'Капитализация крипторынка' }, { value: '420 млн', label: 'Владельцев криптовалют в мире' }, { value: '21 млн', label: 'Максимум биткоинов (ограничение)' }, { value: '$73 750', label: 'Исторический максимум BTC (2024)' }], emoji: '📊' },
+        { type: 'two-columns', title: 'Преимущества и риски', left: { heading: '✅ Преимущества', items: ['Децентрализация — нет единой точки отказа', 'Быстрые международные переводы', 'Прозрачность транзакций', 'Защита от инфляции (для BTC)'] }, right: { heading: '⚠️ Риски', items: ['Волатильность курсов', 'Использование для незаконных операций', 'Энергозатратность майнинга', 'Неопределённость регулирования'] }, emoji: '⚖️' },
+        { type: 'quote', quote: 'Биткоин — это технологический тур-де-форс.', author: 'Билл Гейтс', emoji: '💬' },
+        { type: 'content', title: 'Тренды 2024-2025', bullets: ['Bitcoin ETF одобрен SEC в январе 2024 — приток $10+ млрд за первый квартал', 'Ethereum перешёл на Proof-of-Stake, сократив энергопотребление на 99.95%', 'DeFi (децентрализованные финансы) — $50+ млрд заблокированных средств', 'CBDC — 130+ стран исследуют цифровые валюты центробанков', 'Layer 2 решения (Arbitrum, Optimism) — масштабирование Ethereum'], emoji: '📈' },
+      ]
+    },
+  };
+
+  let matched = null;
+  for (const [, data] of Object.entries(demoData)) {
+    if (data.match.some(keyword => t.includes(keyword))) {
+      matched = data;
+      break;
+    }
+  }
+
+  const slides = [];
+  slides.push({ type: 'title', title: matched ? matched.title : topic, subtitle: matched ? `Обзор ключевых фактов и данных` : `Анализ темы: ${topic}`, emoji: '🎯' });
+
+  if (matched) {
+    const available = matched.slides.slice(0, Math.max(count - 2, 1));
+    slides.push(...available);
+  } else {
+    slides.push(
+      { type: 'content', title: `Ключевые аспекты: ${topic}`, bullets: [`Определение и основные концепции темы "${topic}"`, 'Историческое развитие и ключевые этапы становления', 'Текущее состояние отрасли и основные игроки рынка', 'Влияние на экономику, общество и технологический прогресс', 'Основные вызовы и нерешённые проблемы'], emoji: '📋', note: 'Для получения презентации с реальными данными используйте AI-генерацию' },
+      { type: 'stats', title: 'Обзор отрасли', stats: [{ value: '📈', label: 'Активный рост рынка' }, { value: '🌍', label: 'Глобальное влияние' }, { value: '💡', label: 'Инновационная сфера' }, { value: '🔮', label: 'Перспективное направление' }], emoji: '📊' },
+      { type: 'two-columns', title: 'Анализ перспектив', left: { heading: '✅ Сильные стороны', items: ['Растущий спрос и интерес', 'Поддержка инвесторов', 'Технологическая готовность'] }, right: { heading: '⚠️ Вызовы', items: ['Высокая конкуренция', 'Необходимость кадров', 'Быстрые изменения рынка'] }, emoji: '⚖️' },
+      { type: 'content', title: 'Перспективы развития', bullets: ['Ожидается значительный рост в ближайшие 5-10 лет', 'Интеграция с искусственным интеллектом и автоматизацией', 'Расширение применения в новых отраслях экономики', 'Увеличение государственного и частного финансирования'], emoji: '🚀' }
+    );
+  }
+
+  slides.push({ type: 'end', title: 'Спасибо за внимание!', subtitle: 'Вопросы и обсуждение', emoji: '🙏' });
+
   return {
-    title: topic,
-    subtitle: `Презентация на тему: ${topic}`,
+    title: matched ? matched.title : topic,
+    subtitle: matched ? 'Обзор ключевых фактов и данных' : `Презентация: ${topic}`,
     author: 'AI Presentation',
-    slides: [
-      {
-        type: 'title',
-        title: topic,
-        subtitle: 'Подготовлено с помощью AI',
-        emoji: '🎯'
-      },
-      {
-        type: 'content',
-        title: 'Введение',
-        bullets: [
-          `${topic} — актуальная тема в современном мире`,
-          'Рассмотрим основные аспекты и ключевые моменты',
-          'Проанализируем текущую ситуацию и перспективы',
-          'Подведём итоги и сформулируем выводы'
-        ],
-        emoji: '📋'
-      },
-      {
-        type: 'stats',
-        title: 'Ключевые факты',
-        stats: [
-          { value: '78%', label: 'Рост интереса к теме' },
-          { value: '2.5x', label: 'Увеличение популярности' },
-          { value: '95%', label: 'Положительных отзывов' },
-          { value: '500+', label: 'Исследований проведено' }
-        ],
-        emoji: '📊'
-      },
-      {
-        type: 'two-columns',
-        title: 'Преимущества и вызовы',
-        left: {
-          heading: '✅ Преимущества',
-          items: ['Высокая эффективность', 'Доступность', 'Масштабируемость', 'Современность']
-        },
-        right: {
-          heading: '⚠️ Вызовы',
-          items: ['Сложность внедрения', 'Нехватка кадров', 'Высокие начальные затраты', 'Необходимость обучения']
-        },
-        emoji: '⚖️'
-      },
-      {
-        type: 'content',
-        title: 'Основные направления',
-        bullets: [
-          '🔬 Исследования и разработка новых подходов',
-          '📈 Практическое применение в различных сферах',
-          '🤝 Международное сотрудничество и обмен опытом',
-          '📚 Образование и подготовка специалистов',
-          '💡 Инновации и передовые решения'
-        ],
-        emoji: '🗺️'
-      },
-      {
-        type: 'quote',
-        quote: 'Единственный способ делать великую работу — любить то, что ты делаешь.',
-        author: 'Стив Джобс',
-        emoji: '💬'
-      },
-      {
-        type: 'content',
-        title: 'Выводы',
-        bullets: [
-          `${topic} имеет огромный потенциал для развития`,
-          'Необходим комплексный подход к решению задач',
-          'Важно учитывать международный опыт',
-          'Инвестиции в образование — ключ к успеху'
-        ],
-        emoji: '🎯'
-      },
-      {
-        type: 'end',
-        title: 'Спасибо за внимание!',
-        subtitle: 'Вопросы и обсуждение',
-        emoji: '🙏'
-      }
-    ]
+    slides: slides.slice(0, count)
   };
 };
 
@@ -679,82 +681,72 @@ exports.generatePresentation = async (req, res) => {
 
     const count = Math.min(Math.max(parseInt(slidesCount) || 8, 3), 20);
 
-    const prompt = `Ты — эксперт по созданию презентаций. Создай презентацию на тему: "${topic}"
+    const prompt = `Найди в интернете АКТУАЛЬНУЮ информацию по теме "${topic}" и создай профессиональную презентацию.
+
+ТЫ ОБЯЗАН использовать РЕАЛЬНЫЕ ДАННЫЕ из поиска:
+- Настоящие цифры, статистику, даты, названия организаций
+- Реальные цитаты от известных людей, связанных с темой
+- Актуальные факты за 2023-2025 годы
+- Конкретные примеры, кейсы, исследования
 
 Количество слайдов: ${count}
 Стиль: ${style}
 
-Верни ТОЛЬКО валидный JSON в формате:
+Верни ТОЛЬКО валидный JSON (без markdown, без \`\`\`, без пояснений):
 {
-  "title": "Название презентации",
-  "subtitle": "Подзаголовок",
+  "title": "Конкретное название",
+  "subtitle": "Подзаголовок с ключевой мыслью",
   "author": "AI Presentation",
   "slides": [
-    {
-      "type": "title",
-      "title": "Заголовок на титульном слайде",
-      "subtitle": "Подзаголовок",
-      "emoji": "🎯"
-    },
-    {
-      "type": "content",
-      "title": "Заголовок слайда",
-      "bullets": ["Пункт 1", "Пункт 2", "Пункт 3"],
-      "emoji": "📊",
-      "note": "Примечание спикера (опционально)"
-    },
-    {
-      "type": "two-columns",
-      "title": "Заголовок",
-      "left": { "heading": "Левый", "items": ["пункт 1", "пункт 2"] },
-      "right": { "heading": "Правый", "items": ["пункт 1", "пункт 2"] },
-      "emoji": "⚖️"
-    },
-    {
-      "type": "quote",
-      "quote": "Цитата",
-      "author": "Автор",
-      "emoji": "💬"
-    },
-    {
-      "type": "stats",
-      "title": "Статистика",
-      "stats": [
-        { "value": "85%", "label": "описание" },
-        { "value": "1M+", "label": "описание" }
-      ],
-      "emoji": "📈"
-    },
-    {
-      "type": "end",
-      "title": "Спасибо за внимание!",
-      "subtitle": "Вопросы?",
-      "emoji": "🙏"
-    }
+    { "type": "title", "title": "...", "subtitle": "...", "emoji": "..." },
+    { "type": "content", "title": "...", "bullets": ["факт с цифрой", "факт с цифрой", "факт с цифрой", "факт с цифрой"], "emoji": "...", "note": "опционально" },
+    { "type": "stats", "title": "...", "stats": [{ "value": "$X млрд", "label": "что это" }, { "value": "X%", "label": "что это" }, { "value": "X млн", "label": "что это" }], "emoji": "..." },
+    { "type": "two-columns", "title": "...", "left": { "heading": "...", "items": ["...", "..."] }, "right": { "heading": "...", "items": ["...", "..."] }, "emoji": "..." },
+    { "type": "quote", "quote": "реальная цитата", "author": "Имя Фамилия, должность", "emoji": "..." },
+    { "type": "end", "title": "...", "subtitle": "...", "emoji": "..." }
   ]
 }
 
-Важно:
-- Первый слайд ОБЯЗАТЕЛЬНО type "title"
-- Последний слайд ОБЯЗАТЕЛЬНО type "end"
-- Между ними используй разные типы: content, two-columns, quote, stats
-- Контент должен быть содержательным и информативным
-- Используй уместные emoji
-- Возвращай ТОЛЬКО JSON, без markdown и пояснений`;
+ПРАВИЛА:
+- Первый слайд type "title", последний type "end"
+- Между ними чередуй: content, stats, two-columns, quote
+- bullets: 4-5 пунктов с КОНКРЕТНЫМИ фактами и цифрами
+- stats: 3-4 карточки с РЕАЛЬНЫМИ числами
+- quote: от РЕАЛЬНОГО человека по теме (с должностью/титулом)
+- Каждый слайд раскрывает тему с НОВОЙ стороны
+- ЗАПРЕЩЕНО: общие фразы, выдуманные данные, абстрактные формулировки
+- Отвечай ТОЛЬКО JSON объектом`;
 
-    const aiResult = await callGemini(prompt);
+    // Сначала пробуем с Google Search (реальные данные из интернета)
+    let aiResult = await callGeminiWithSearch(prompt);
 
     if (aiResult.success) {
       try {
-        const jsonMatch = aiResult.text.match(/\{[\s\S]*\}/);
-        const presentation = JSON.parse(jsonMatch ? jsonMatch[0] : aiResult.text);
+        let text = aiResult.text;
+        // Убираем markdown обёртку если есть
+        text = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        const presentation = JSON.parse(jsonMatch ? jsonMatch[0] : text);
         return res.json({
           success: true,
           presentation,
-          source: 'gemini'
+          source: aiResult.grounded ? 'gemini-search' : 'gemini'
         });
       } catch (parseError) {
-        console.error('Ошибка парсинга презентации:', parseError);
+        console.error('Ошибка парсинга презентации:', parseError.message);
+        // Если парсинг не удался с поиском, пробуем без
+        aiResult = await callGemini(prompt);
+        if (aiResult.success) {
+          try {
+            let text = aiResult.text;
+            text = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            const presentation = JSON.parse(jsonMatch ? jsonMatch[0] : text);
+            return res.json({ success: true, presentation, source: 'gemini' });
+          } catch (e) {
+            console.error('Повторная ошибка парсинга:', e.message);
+          }
+        }
       }
     }
 
