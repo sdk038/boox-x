@@ -9,12 +9,13 @@ const AIAssistant = lazy(() => import('./AIAssistant'));
 const Boards = lazy(() => import('./Boards'));
 const Files = lazy(() => import('./Files'));
 const Settings = lazy(() => import('./Settings'));
+const Presentations = lazy(() => import('./Presentations'));
 
-// Маппинг табов на URL-хэши
 const TAB_ROUTES = {
   home: 'home',
   boards: 'boards',
   files: 'files',
+  presentations: 'presentations',
   settings: 'settings',
   admin: 'admin',
   ai: 'ai'
@@ -24,6 +25,7 @@ const TAB_TITLES = {
   home: 'Главная',
   boards: 'Доски',
   files: 'Файлы',
+  presentations: 'Презентации',
   settings: 'Настройки',
   admin: 'Админ панель',
   ai: 'AI Ассистент'
@@ -338,6 +340,8 @@ const Dashboard = () => {
         return <AdminPanel />;
       case 'ai':
         return <AIAssistant />;
+      case 'presentations':
+        return <Presentations />;
       default:
         return <HomeContent user={user} onNavigate={handleTabChange} />;
     }

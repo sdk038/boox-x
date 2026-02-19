@@ -65,6 +65,14 @@ const Sidebar = ({ activeTab, setActiveTab, onExpandChange, isPinned, onPinToggl
           </button>
 
           <button
+            className={activeTab === 'presentations' ? 'active' : ''}
+            onClick={() => setActiveTab('presentations')}
+            title="Презентации"
+          >
+            <span style={{ fontSize: '20px' }}>📊</span>
+          </button>
+
+          <button
             className={`bottom-btn ${activeTab === 'settings' ? 'active' : ''}`}
             onClick={() => setActiveTab('settings')}
             title="Settings"
@@ -117,6 +125,14 @@ const Sidebar = ({ activeTab, setActiveTab, onExpandChange, isPinned, onPinToggl
             </button>
 
             <button
+              className={activeTab === 'presentations' ? 'active' : ''}
+              onClick={() => setActiveTab('presentations')}
+            >
+              <i><span style={{ fontSize: '24px' }}>📊</span></i>
+              <span>Презентации</span>
+            </button>
+
+            <button
               className={activeTab === 'files' ? 'active' : ''}
               onClick={() => setActiveTab('files')}
             >
@@ -137,7 +153,7 @@ const Sidebar = ({ activeTab, setActiveTab, onExpandChange, isPinned, onPinToggl
         </div>
       </aside>
 
-      {/* Mobile Bottom Navigation */}
+      
       <nav className="mobile-nav">
         <button
           className={`mobile-nav-btn ${activeTab === 'home' ? 'active' : ''}`}
@@ -187,6 +203,9 @@ const Sidebar = ({ activeTab, setActiveTab, onExpandChange, isPinned, onPinToggl
               </div>
             </div>
             <div className="mobile-menu-items">
+              <button onClick={() => handleMobileTabChange('presentations')}>
+                <span>📊</span> Презентации
+              </button>
               <button onClick={() => handleMobileTabChange('files')}>
                 <span>📁</span> Файлы
               </button>

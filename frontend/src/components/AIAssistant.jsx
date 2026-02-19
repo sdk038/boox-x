@@ -85,7 +85,6 @@ if (typeof window !== 'undefined') {
           btn.classList.remove('copied');
         }, 2000);
       }).catch(() => {
-        // Fallback для старых браузеров
         const textarea = document.createElement('textarea');
         textarea.value = text;
         document.body.appendChild(textarea);
@@ -112,234 +111,6 @@ const MessageContent = ({ content }) => {
   );
 };
 
-// ============== Компонент слайда ==============
-const SlideRenderer = ({ slide, index, total }) => {
-  switch (slide.type) {
-    case 'title':
-      return (
-        <div className="slide slide-title">
-          <div className="slide-emoji-big">{slide.emoji}</div>
-          <h1>{slide.title}</h1>
-          <p className="slide-subtitle">{slide.subtitle}</p>
-          <div className="slide-number">{index + 1} / {total}</div>
-        </div>
-      );
-    case 'content':
-      return (
-        <div className="slide slide-content">
-          <h2>{slide.emoji} {slide.title}</h2>
-          <ul className="slide-bullets">
-            {slide.bullets?.map((b, i) => <li key={i}>{b}</li>)}
-          </ul>
-          {slide.note && <p className="slide-note">💡 {slide.note}</p>}
-          <div className="slide-number">{index + 1} / {total}</div>
-        </div>
-      );
-    case 'two-columns':
-      return (
-        <div className="slide slide-two-cols">
-          <h2>{slide.emoji} {slide.title}</h2>
-          <div className="slide-columns">
-            <div className="slide-col">
-              <h3>{slide.left?.heading}</h3>
-              <ul>{slide.left?.items?.map((item, i) => <li key={i}>{item}</li>)}</ul>
-            </div>
-            <div className="slide-col">
-              <h3>{slide.right?.heading}</h3>
-              <ul>{slide.right?.items?.map((item, i) => <li key={i}>{item}</li>)}</ul>
-            </div>
-          </div>
-          <div className="slide-number">{index + 1} / {total}</div>
-        </div>
-      );
-    case 'quote':
-      return (
-        <div className="slide slide-quote">
-          <div className="slide-emoji-big">{slide.emoji}</div>
-          <blockquote>"{slide.quote}"</blockquote>
-          <p className="slide-quote-author">— {slide.author}</p>
-          <div className="slide-number">{index + 1} / {total}</div>
-        </div>
-      );
-    case 'stats':
-      return (
-        <div className="slide slide-stats">
-          <h2>{slide.emoji} {slide.title}</h2>
-          <div className="slide-stats-grid">
-            {slide.stats?.map((s, i) => (
-              <div key={i} className="slide-stat-item">
-                <div className="slide-stat-value">{s.value}</div>
-                <div className="slide-stat-label">{s.label}</div>
-              </div>
-            ))}
-          </div>
-          <div className="slide-number">{index + 1} / {total}</div>
-        </div>
-      );
-    case 'end':
-      return (
-        <div className="slide slide-end">
-          <div className="slide-emoji-big">{slide.emoji}</div>
-          <h1>{slide.title}</h1>
-          <p className="slide-subtitle">{slide.subtitle}</p>
-          <div className="slide-number">{index + 1} / {total}</div>
-        </div>
-      );
-    default:
-      return (
-        <div className="slide slide-content">
-          <h2>{slide.title}</h2>
-          <p>{JSON.stringify(slide)}</p>
-          <div className="slide-number">{index + 1} / {total}</div>
-        </div>
-      );
-  }
-};
-
-// ============== Просмотрщик презентации ==============
-const PresentationViewer = ({ presentation, onClose }) => {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const viewerRef = useRef(null);
-  const touchStartX = useRef(0);
-  const touchEndX = useRef(0);
-  const slides = presentation.slides || [];
-
-  const goNext = () => setCurrentSlide(prev => Math.min(prev + 1, slides.length - 1));
-  const goPrev = () => setCurrentSlide(prev => Math.max(prev - 1, 0));
-
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchMove = (e) => {
-    touchEndX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchEnd = () => {
-    const diff = touchStartX.current - touchEndX.current;
-    const minSwipe = 50;
-    if (Math.abs(diff) > minSwipe) {
-      if (diff > 0) goNext();
-      else goPrev();
-    }
-    touchStartX.current = 0;
-    touchEndX.current = 0;
-  };
-
-  useEffect(() => {
-    const handleKey = (e) => {
-      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goNext(); }
-      if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev(); }
-      if (e.key === 'Escape') { 
-        if (isFullscreen) toggleFullscreen();
-        else onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  });
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      viewerRef.current?.requestFullscreen?.();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen?.();
-      setIsFullscreen(false);
-    }
-  };
-
-  useEffect(() => {
-    const handler = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', handler);
-    return () => document.removeEventListener('fullscreenchange', handler);
-  }, []);
-
-  const exportHTML = () => {
-    const colors = ['#4066ff', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899', '#84cc16'];
-    const slidesHTML = slides.map((slide, i) => {
-      const bg = colors[i % colors.length];
-      let content = '';
-      switch (slide.type) {
-        case 'title':
-          content = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center"><div style="font-size:80px;margin-bottom:30px">${slide.emoji||''}</div><h1 style="font-size:52px;margin:0 0 16px;font-weight:800">${slide.title}</h1><p style="font-size:24px;opacity:0.85">${slide.subtitle||''}</p></div>`;
-          break;
-        case 'content':
-          content = `<h2 style="font-size:38px;margin-bottom:32px">${slide.emoji||''} ${slide.title}</h2><ul style="font-size:22px;line-height:2;list-style:none;padding:0">${(slide.bullets||[]).map(b => `<li style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.15)">▸ ${b}</li>`).join('')}</ul>`;
-          break;
-        case 'two-columns':
-          content = `<h2 style="font-size:38px;margin-bottom:32px">${slide.emoji||''} ${slide.title}</h2><div style="display:flex;gap:40px"><div style="flex:1;background:rgba(255,255,255,0.1);padding:24px;border-radius:16px"><h3 style="margin:0 0 16px">${slide.left?.heading||''}</h3><ul style="padding-left:20px;line-height:1.8">${(slide.left?.items||[]).map(i => `<li>${i}</li>`).join('')}</ul></div><div style="flex:1;background:rgba(255,255,255,0.1);padding:24px;border-radius:16px"><h3 style="margin:0 0 16px">${slide.right?.heading||''}</h3><ul style="padding-left:20px;line-height:1.8">${(slide.right?.items||[]).map(i => `<li>${i}</li>`).join('')}</ul></div></div>`;
-          break;
-        case 'quote':
-          content = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center"><div style="font-size:60px;margin-bottom:20px">${slide.emoji||''}</div><blockquote style="font-size:30px;font-style:italic;max-width:700px;line-height:1.6">"${slide.quote}"</blockquote><p style="font-size:20px;opacity:0.8;margin-top:24px">— ${slide.author||''}</p></div>`;
-          break;
-        case 'stats':
-          content = `<h2 style="font-size:38px;margin-bottom:40px;text-align:center">${slide.emoji||''} ${slide.title}</h2><div style="display:grid;grid-template-columns:repeat(${Math.min((slide.stats||[]).length,4)},1fr);gap:24px">${(slide.stats||[]).map(s => `<div style="background:rgba(255,255,255,0.15);padding:32px;border-radius:16px;text-align:center"><div style="font-size:42px;font-weight:800;margin-bottom:8px">${s.value}</div><div style="font-size:16px;opacity:0.85">${s.label}</div></div>`).join('')}</div>`;
-          break;
-        case 'end':
-          content = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center"><div style="font-size:80px;margin-bottom:30px">${slide.emoji||''}</div><h1 style="font-size:52px;margin:0 0 16px;font-weight:800">${slide.title}</h1><p style="font-size:24px;opacity:0.85">${slide.subtitle||''}</p></div>`;
-          break;
-        default:
-          content = `<h2>${slide.title||''}</h2>`;
-      }
-      return `<div class="slide" style="background:${bg};min-height:100vh;padding:60px 80px;color:white;display:flex;flex-direction:column;justify-content:center;font-family:'Segoe UI',sans-serif;page-break-after:always">${content}<div style="position:absolute;bottom:24px;right:40px;opacity:0.5;font-size:14px">${i+1} / ${slides.length}</div></div>`;
-    }).join('\n');
-
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${presentation.title}</title><style>*{margin:0;padding:0;box-sizing:border-box}.slide{position:relative}@media print{.slide{page-break-after:always}}</style></head><body>${slidesHTML}</body></html>`;
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${presentation.title || 'presentation'}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  if (!slides.length) return null;
-
-  return (
-    <div className={`pres-viewer ${isFullscreen ? 'fullscreen' : ''}`} ref={viewerRef}>
-      <div className="pres-toolbar">
-        <button className="pres-tool-btn" onClick={onClose}>✕ Закрыть</button>
-        <span className="pres-slide-counter">{currentSlide + 1} / {slides.length}</span>
-        <div className="pres-tool-right">
-          <button className="pres-tool-btn" onClick={exportHTML}>📥 Скачать HTML</button>
-          <button className="pres-tool-btn" onClick={toggleFullscreen}>
-            {isFullscreen ? '🔲 Свернуть' : '🔳 На весь экран'}
-          </button>
-        </div>
-      </div>
-
-      <div 
-        className="pres-stage"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        <button className="pres-nav-btn prev" onClick={goPrev} disabled={currentSlide === 0}>‹</button>
-        <div className="pres-slide-frame">
-          <SlideRenderer slide={slides[currentSlide]} index={currentSlide} total={slides.length} />
-        </div>
-        <button className="pres-nav-btn next" onClick={goNext} disabled={currentSlide === slides.length - 1}>›</button>
-      </div>
-
-      <div className="pres-thumbnails">
-        {slides.map((slide, i) => (
-          <button
-            key={i}
-            className={`pres-thumb ${i === currentSlide ? 'active' : ''}`}
-            onClick={() => setCurrentSlide(i)}
-          >
-            <span className="pres-thumb-emoji">{slide.emoji || '📄'}</span>
-            <span className="pres-thumb-num">{i + 1}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
-
 const AIAssistant = () => {
   const [activeMode, setActiveMode] = useState('chat');
   const [loading, setLoading] = useState(false);
@@ -355,12 +126,6 @@ const AIAssistant = () => {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const messagesEndRef = useRef(null);
-
-  // Презентация
-  const [presTopic, setPresTopic] = useState('');
-  const [presSlides, setPresSlides] = useState(8);
-  const [presStyle, setPresStyle] = useState('modern');
-  const [presentation, setPresentation] = useState(null);
 
   // Автоскролл к последнему сообщению
   useEffect(() => {
@@ -489,37 +254,6 @@ const AIAssistant = () => {
     setError('');
   };
 
-  // Генерация презентации
-  const handleGeneratePresentation = async () => {
-    if (!presTopic.trim()) {
-      setError('Укажите тему презентации');
-      return;
-    }
-    try {
-      setLoading(true);
-      setError('');
-      trackingAPI.track('ai_generate_presentation', `Презентация: ${presTopic}`, 'ai');
-      const response = await aiAPI.generatePresentation(presTopic, presSlides, presStyle);
-      if (response.data.success) {
-        setPresentation(response.data.presentation);
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Ошибка генерации презентации');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Если открыт просмотрщик — показываем только его
-  if (presentation) {
-    return (
-      <PresentationViewer
-        presentation={presentation}
-        onClose={() => setPresentation(null)}
-      />
-    );
-  }
-
   return (
     <div className="ai-assistant">
       <div className="ai-header">
@@ -539,12 +273,6 @@ const AIAssistant = () => {
           onClick={() => setActiveMode('generate')}
         >
           ✨ Генерация проекта
-        </button>
-        <button 
-          className={activeMode === 'presentation' ? 'active' : ''}
-          onClick={() => setActiveMode('presentation')}
-        >
-          📊 Презентации
         </button>
       </div>
 
@@ -638,71 +366,6 @@ const AIAssistant = () => {
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {activeMode === 'presentation' && (
-        <div className="ai-presentation-mode">
-          <div className="ai-input-section">
-            <h3>📊 Тема презентации</h3>
-            <input
-              type="text"
-              value={presTopic}
-              onChange={(e) => setPresTopic(e.target.value)}
-              placeholder="Например: Искусственный интеллект в медицине"
-              disabled={loading}
-              onKeyDown={(e) => e.key === 'Enter' && handleGeneratePresentation()}
-            />
-
-            <div className="pres-options">
-              <div className="pres-option">
-                <label>Количество слайдов</label>
-                <select value={presSlides} onChange={(e) => setPresSlides(Number(e.target.value))} disabled={loading}>
-                  <option value={5}>5 слайдов</option>
-                  <option value={8}>8 слайдов</option>
-                  <option value={10}>10 слайдов</option>
-                  <option value={15}>15 слайдов</option>
-                  <option value={20}>20 слайдов</option>
-                </select>
-              </div>
-              <div className="pres-option">
-                <label>Стиль</label>
-                <select value={presStyle} onChange={(e) => setPresStyle(e.target.value)} disabled={loading}>
-                  <option value="modern">🎨 Современный</option>
-                  <option value="business">💼 Деловой</option>
-                  <option value="creative">🌈 Креативный</option>
-                  <option value="minimal">✨ Минималистичный</option>
-                  <option value="academic">📚 Академический</option>
-                </select>
-              </div>
-            </div>
-
-            <button 
-              className="ai-button primary"
-              onClick={handleGeneratePresentation}
-              disabled={loading || !presTopic.trim()}
-            >
-              {loading ? '⏳ Генерация...' : '🎯 Создать презентацию'}
-            </button>
-          </div>
-
-          <div className="pres-examples">
-            <h4>Примеры тем:</h4>
-            <div className="pres-example-chips">
-              {[
-                '🤖 Искусственный интеллект',
-                '🌍 Экология и климат',
-                '🚀 Космические технологии',
-                '💰 Криптовалюты и блокчейн',
-                '🧬 Генная инженерия',
-                '📱 Мобильная разработка'
-              ].map((topic, i) => (
-                <button key={i} className="pres-chip" onClick={() => setPresTopic(topic.replace(/^.{2}\s/, ''))}>
-                  {topic}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       )}
 
