@@ -8,30 +8,64 @@ const logActivity = require('../utils/logActivity');
 // Если API недоступен - переключается на DEMO
 // ============================================
 
-// Безопасный вызов Gemini API с fallback
-const callGemini = async (prompt) => {
-  try {
-    const model = getModel();
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return { success: true, text: response.text() };
-  } catch (error) {
-    console.error('⚠️ Gemini API ошибка:', error.message);
-    return { success: false, error: error.message, fallback: true };
+// Безопасный вызов Gemini API с retry
+const callGemini = async (prompt, { jsonMode = false, retries = 2 } = {}) => {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const model = getModel(jsonMode);
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      if (!text || text.trim().length === 0) {
+        console.error(`⚠️ Gemini вернул пустой ответ (попытка ${attempt}/${retries})`);
+        if (attempt < retries) continue;
+        return { success: false, error: 'empty response', fallback: true };
+      }
+      return { success: true, text };
+    } catch (error) {
+      console.error(`⚠️ Gemini API ошибка (попытка ${attempt}/${retries}):`, error.message);
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 1000 * attempt));
+        continue;
+      }
+      return { success: false, error: error.message, fallback: true };
+    }
   }
+  return { success: false, error: 'max retries', fallback: true };
 };
 
 // Gemini + Google Search — для получения реальных данных из интернета
-const callGeminiWithSearch = async (prompt) => {
+const callGeminiWithSearch = async (prompt, { jsonMode = false } = {}) => {
   try {
-    const model = getModelWithSearch();
+    const model = getModelWithSearch(jsonMode);
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    return { success: true, text: response.text(), grounded: true };
+    const text = response.text();
+    if (!text || text.trim().length === 0) {
+      console.error('⚠️ Gemini Search вернул пустой ответ — пробуем без поиска');
+      return callGemini(prompt, { jsonMode });
+    }
+    return { success: true, text, grounded: true };
   } catch (error) {
     console.error('⚠️ Gemini Search ошибка:', error.message, '— пробуем без поиска');
-    return callGemini(prompt);
+    return callGemini(prompt, { jsonMode });
   }
+};
+
+// Надёжный парсинг JSON из ответа Gemini
+const parseJsonResponse = (text) => {
+  let cleaned = text.trim();
+  cleaned = cleaned.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch (_) {}
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      return JSON.parse(jsonMatch[0]);
+    } catch (_) {}
+  }
+  return null;
 };
 
 // ============================================
@@ -389,25 +423,19 @@ ${preferences ? `Дополнительные предпочтения: ${JSON.s
 
 Создай реалистичный план с 5-10 задачами. Возвращай ТОЛЬКО валидный JSON, без дополнительного текста.`;
 
-    const aiResult = await callGemini(prompt);
+    const aiResult = await callGemini(prompt, { jsonMode: true });
 
     if (aiResult.success) {
-      // AI работает - парсим ответ
-      let projectData;
-      try {
-        const jsonMatch = aiResult.text.match(/\{[\s\S]*\}/);
-        projectData = JSON.parse(jsonMatch ? jsonMatch[0] : aiResult.text);
-      } catch (parseError) {
-        console.error('Ошибка парсинга AI ответа, используем DEMO:', aiResult.text);
-        projectData = getDemoProjectResponse(description);
+      const projectData = parseJsonResponse(aiResult.text);
+      if (projectData && projectData.projectName) {
+        return res.json({
+          success: true,
+          project: projectData,
+          message: '🤖 Проект сгенерирован с помощью AI!',
+          source: 'gemini'
+        });
       }
-      
-      return res.json({
-        success: true,
-        project: projectData,
-        message: '🤖 Проект сгенерирован с помощью AI!',
-        source: 'gemini'
-      });
+      console.error('Ошибка парсинга AI ответа, используем DEMO');
     }
 
     // Fallback на DEMO
@@ -517,14 +545,12 @@ exports.generateTask = async (req, res) => {
 
 Возвращай ТОЛЬКО валидный JSON, без дополнительного текста.`;
 
-    const aiResult = await callGemini(prompt);
+    const aiResult = await callGemini(prompt, { jsonMode: true });
     
     let taskData;
     if (aiResult.success) {
-      try {
-        const jsonMatch = aiResult.text.match(/\{[\s\S]*\}/);
-        taskData = JSON.parse(jsonMatch ? jsonMatch[0] : aiResult.text);
-      } catch (parseError) {
+      taskData = parseJsonResponse(aiResult.text);
+      if (!taskData || !taskData.title) {
         taskData = getDemoTaskResponse(text);
       }
     } else {
@@ -634,14 +660,12 @@ ${projectInfo.tasks.map(t => `- ${t.title} [${t.status}] [${t.priority}]`).join(
 
 Возвращай ТОЛЬКО валидный JSON, без дополнительного текста.`;
 
-    const aiResult = await callGemini(prompt);
+    const aiResult = await callGemini(prompt, { jsonMode: true });
     
     let analysis;
     if (aiResult.success) {
-      try {
-        const jsonMatch = aiResult.text.match(/\{[\s\S]*\}/);
-        analysis = JSON.parse(jsonMatch ? jsonMatch[0] : aiResult.text);
-      } catch (parseError) {
+      analysis = parseJsonResponse(aiResult.text);
+      if (!analysis || !analysis.overallStatus) {
         analysis = getDemoAnalysisResponse(projectInfo);
       }
     } else {
@@ -681,76 +705,67 @@ exports.generatePresentation = async (req, res) => {
 
     const count = Math.min(Math.max(parseInt(slidesCount) || 8, 3), 20);
 
-    const prompt = `Найди в интернете АКТУАЛЬНУЮ информацию по теме "${topic}" и создай профессиональную презентацию.
+    const prompt = `Создай профессиональную презентацию на тему "${topic}".
+Используй актуальные реальные данные, факты, цифры и статистику.
 
-ТЫ ОБЯЗАН использовать РЕАЛЬНЫЕ ДАННЫЕ из поиска:
-- Настоящие цифры, статистику, даты, названия организаций
-- Реальные цитаты от известных людей, связанных с темой
-- Актуальные факты за 2023-2025 годы
-- Конкретные примеры, кейсы, исследования
+Количество слайдов: ровно ${count}.
 
-Количество слайдов: ${count}
-Стиль: ${style}
-
-Верни ТОЛЬКО валидный JSON (без markdown, без \`\`\`, без пояснений):
+Верни JSON объект со следующей структурой:
 {
-  "title": "Конкретное название",
+  "title": "Конкретное привлекательное название презентации",
   "subtitle": "Подзаголовок с ключевой мыслью",
   "author": "AI Presentation",
-  "slides": [
-    { "type": "title", "title": "...", "subtitle": "...", "emoji": "..." },
-    { "type": "content", "title": "...", "bullets": ["факт с цифрой", "факт с цифрой", "факт с цифрой", "факт с цифрой"], "emoji": "...", "note": "опционально" },
-    { "type": "stats", "title": "...", "stats": [{ "value": "$X млрд", "label": "что это" }, { "value": "X%", "label": "что это" }, { "value": "X млн", "label": "что это" }], "emoji": "..." },
-    { "type": "two-columns", "title": "...", "left": { "heading": "...", "items": ["...", "..."] }, "right": { "heading": "...", "items": ["...", "..."] }, "emoji": "..." },
-    { "type": "quote", "quote": "реальная цитата", "author": "Имя Фамилия, должность", "emoji": "..." },
-    { "type": "end", "title": "...", "subtitle": "...", "emoji": "..." }
-  ]
+  "slides": [массив из ${count} слайдов]
 }
 
-ПРАВИЛА:
-- Первый слайд type "title", последний type "end"
-- Между ними чередуй: content, stats, two-columns, quote
-- bullets: 4-5 пунктов с КОНКРЕТНЫМИ фактами и цифрами
-- stats: 3-4 карточки с РЕАЛЬНЫМИ числами
-- quote: от РЕАЛЬНОГО человека по теме (с должностью/титулом)
-- Каждый слайд раскрывает тему с НОВОЙ стороны
-- ЗАПРЕЩЕНО: общие фразы, выдуманные данные, абстрактные формулировки
-- Отвечай ТОЛЬКО JSON объектом`;
+Доступные типы слайдов:
+1. { "type": "title", "title": "...", "subtitle": "...", "emoji": "..." } — титульный, ОБЯЗАТЕЛЬНО первый
+2. { "type": "content", "title": "...", "bullets": ["пункт 1", "пункт 2", "пункт 3", "пункт 4"], "emoji": "...", "note": "опционально" } — контент с буллетами
+3. { "type": "stats", "title": "...", "stats": [{ "value": "$184 млрд", "label": "Объём рынка" }, ...ещё 2-3], "emoji": "..." } — статистика с РЕАЛЬНЫМИ числами
+4. { "type": "two-columns", "title": "...", "left": { "heading": "Заголовок", "items": ["...", "..."] }, "right": { "heading": "Заголовок", "items": ["...", "..."] }, "emoji": "..." } — две колонки
+5. { "type": "quote", "quote": "цитата", "author": "Имя Фамилия, должность", "emoji": "..." } — цитата реального человека
+6. { "type": "end", "title": "Спасибо за внимание!", "subtitle": "...", "emoji": "..." } — финальный, ОБЯЗАТЕЛЬНО последний
 
-    // Сначала пробуем с Google Search (реальные данные из интернета)
+Правила:
+- Первый слайд ВСЕГДА type "title", последний ВСЕГДА type "end"
+- Чередуй типы: content, stats, two-columns, quote между первым и последним
+- В stats поле value ОБЯЗАТЕЛЬНО содержит число/процент/сумму (НЕ эмодзи)
+- Все bullets — конкретные факты с цифрами, не абстрактные фразы
+- Каждый emoji — один символ эмодзи
+- quote — от реального известного человека, связанного с темой`;
+
+    // Попытка 1: Gemini с Google Search (реальные данные из интернета)
+    console.log(`🎯 Генерация презентации: "${topic}" (${count} слайдов)`);
     let aiResult = await callGeminiWithSearch(prompt);
 
     if (aiResult.success) {
-      try {
-        let text = aiResult.text;
-        // Убираем markdown обёртку если есть
-        text = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        const presentation = JSON.parse(jsonMatch ? jsonMatch[0] : text);
+      const presentation = parseJsonResponse(aiResult.text);
+      if (presentation && presentation.slides && presentation.slides.length > 0) {
+        console.log(`✅ Презентация сгенерирована через ${aiResult.grounded ? 'Gemini+Search' : 'Gemini'}: ${presentation.slides.length} слайдов`);
         return res.json({
           success: true,
           presentation,
           source: aiResult.grounded ? 'gemini-search' : 'gemini'
         });
-      } catch (parseError) {
-        console.error('Ошибка парсинга презентации:', parseError.message);
-        // Если парсинг не удался с поиском, пробуем без
-        aiResult = await callGemini(prompt);
-        if (aiResult.success) {
-          try {
-            let text = aiResult.text;
-            text = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-            const jsonMatch = text.match(/\{[\s\S]*\}/);
-            const presentation = JSON.parse(jsonMatch ? jsonMatch[0] : text);
-            return res.json({ success: true, presentation, source: 'gemini' });
-          } catch (e) {
-            console.error('Повторная ошибка парсинга:', e.message);
-          }
-        }
       }
+      console.error('⚠️ Gemini Search: JSON распарсился, но слайды пустые. Пробуем JSON mode...');
     }
 
-    // DEMO fallback
+    // Попытка 2: Gemini с принудительным JSON mode (без search, но гарантированный JSON)
+    aiResult = await callGemini(prompt, { jsonMode: true, retries: 2 });
+
+    if (aiResult.success) {
+      const presentation = parseJsonResponse(aiResult.text);
+      if (presentation && presentation.slides && presentation.slides.length > 0) {
+        console.log(`✅ Презентация сгенерирована через Gemini JSON mode: ${presentation.slides.length} слайдов`);
+        return res.json({ success: true, presentation, source: 'gemini' });
+      }
+      console.error('⚠️ Gemini JSON mode: не удалось получить валидные слайды');
+      console.error('⚠️ Ответ Gemini:', aiResult.text?.substring(0, 500));
+    }
+
+    // Только если AI полностью недоступен — DEMO fallback
+    console.log('⚡ AI недоступен, используем DEMO режим');
     const presentation = getDemoPresentationResponse(topic, count);
     res.json({
       success: true,
@@ -759,7 +774,7 @@ exports.generatePresentation = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Ошибка генерации презентации:', error);
+    console.error('❌ Критическая ошибка генерации презентации:', error);
     try {
       const presentation = getDemoPresentationResponse(req.body.topic || 'Презентация', 8);
       return res.json({ success: true, presentation, source: 'demo' });

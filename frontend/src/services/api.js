@@ -6,7 +6,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 // Создание экземпляра axios
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 15000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -120,7 +120,7 @@ export const aiAPI = {
   chat: (message, context = null) => 
     api.post('/ai/chat', { message, context }),
   generatePresentation: (topic, slidesCount = 8, style = 'modern') =>
-    api.post('/ai/generate-presentation', { topic, slidesCount, style }, { timeout: 60000 })
+    api.post('/ai/generate-presentation', { topic, slidesCount, style }, { timeout: 90000 })
 };
 
 // Tracking API
