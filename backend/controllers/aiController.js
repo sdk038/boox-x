@@ -35,21 +35,29 @@ const callGemini = async (prompt, { jsonMode = false, retries = 2 } = {}) => {
 };
 
 // Gemini + Google Search — для получения реальных данных из интернета
-const callGeminiWithSearch = async (prompt, { jsonMode = false } = {}) => {
+const callGeminiWithSearch = async (prompt, { jsonMode = false, retries = 2 } = {}) => {
+  for (let attempt = 1; attempt <= retries; attempt++) {
   try {
     const model = getModelWithSearch(jsonMode);
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
     if (!text || text.trim().length === 0) {
-      console.error('⚠️ Gemini Search вернул пустой ответ — пробуем без поиска');
-      return callGemini(prompt, { jsonMode });
+        console.error(`⚠️ Gemini Search вернул пустой ответ (попытка ${attempt}/${retries})`);
+        if (attempt < retries) continue;
+        return { success: false, error: 'empty response from search model' };
     }
     return { success: true, text, grounded: true };
   } catch (error) {
-    console.error('⚠️ Gemini Search ошибка:', error.message, '— пробуем без поиска');
-    return callGemini(prompt, { jsonMode });
+      console.error(`⚠️ Gemini Search ошибка (попытка ${attempt}/${retries}):`, error.message);
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 1000 * attempt));
+        continue;
+      }
+      return { success: false, error: error.message };
+    }
   }
+  return { success: false, error: 'max retries' };
 };
 
 // Надёжный парсинг JSON из ответа Gemini
@@ -796,96 +804,83 @@ const extractTopic = (raw) => {
 // @access  Public (optionalAuth)
 exports.generatePresentation = async (req, res) => {
   try {
-    const { topic: rawTopic, slidesCount = 8, style = 'modern' } = req.body;
+    const { topic: rawTopic, slidesCount = 8 } = req.body;
 
     if (!rawTopic) {
-      return res.status(400).json({ message: 'Укажите тему презентации' });
+      return res.status(400).json({ success: false, message: 'Укажите тему презентации' });
     }
 
     const topic = extractTopic(rawTopic);
     const count = Math.min(Math.max(parseInt(slidesCount) || 8, 3), 20);
 
-    // Проверяем наличие API ключа
     if (!process.env.GEMINI_API_KEY) {
-      console.error('❌ GEMINI_API_KEY не установлен! Используем DEMO.');
-      const presentation = getDemoPresentationResponse(topic, count);
-      return res.json({ success: true, presentation, source: 'demo', warning: 'AI ключ не настроен' });
+      return res.status(503).json({
+        success: false,
+        message: 'AI временно недоступен: не настроен GEMINI_API_KEY'
+      });
     }
 
     const prompt = `Создай презентацию на тему "${topic}" из ровно ${count} слайдов.
-Используй РЕАЛЬНЫЕ факты, цифры, даты, имена. Всё должно быть достоверным.
+Используй РЕАЛЬНЫЕ и АКТУАЛЬНЫЕ данные (факты, цифры, даты, имена) из поиска.
+Для каждого контентного слайда добавь поле "sources" (массив из 1-2 URL).
 
-Ответь ТОЛЬКО JSON (без текста вокруг):
-{"title":"Красивое название","subtitle":"Подзаголовок","slides":[${count} объектов]}
+Ответь ТОЛЬКО JSON:
+{
+  "title":"Название",
+  "subtitle":"Подзаголовок",
+  "author":"AI Presentation",
+  "slides":[...]
+}
 
-Типы слайдов:
-- title: {"type":"title","title":"...","subtitle":"...","emoji":"🎯"} — ПЕРВЫЙ слайд
-- content: {"type":"content","title":"...","bullets":["факт с цифрой","факт","факт","факт"],"emoji":"📋"}
-- stats: {"type":"stats","title":"...","stats":[{"value":"$184 млрд","label":"Рынок"},{"value":"45%","label":"Рост"}],"emoji":"📊"} — value это ЧИСЛО, не эмодзи
-- two-columns: {"type":"two-columns","title":"...","left":{"heading":"...","items":["...","..."]},"right":{"heading":"...","items":["...","..."]},"emoji":"⚖️"}
-- quote: {"type":"quote","quote":"реальная цитата","author":"Имя Фамилия","emoji":"💡"}
-- end: {"type":"end","title":"Спасибо!","subtitle":"...","emoji":"🙏"} — ПОСЛЕДНИЙ слайд
+Типы:
+- title: {"type":"title","title":"...","subtitle":"...","emoji":"🎯"} (первый)
+- content: {"type":"content","title":"...","bullets":["...","...","...","..."],"emoji":"📋","sources":["https://..."]}
+- stats: {"type":"stats","title":"...","stats":[{"value":"12%","label":"..."},{"value":"$3.2 млрд","label":"..."}],"emoji":"📊","sources":["https://..."]}
+- two-columns: {"type":"two-columns","title":"...","left":{"heading":"...","items":["...","..."]},"right":{"heading":"...","items":["...","..."]},"emoji":"⚖️","sources":["https://..."]}
+- quote: {"type":"quote","quote":"...","author":"...","emoji":"💡","sources":["https://..."]}
+- end: {"type":"end","title":"Спасибо!","subtitle":"...","emoji":"🙏"} (последний)
 
-Слайд 1=title, слайд ${count}=end. Между ними чередуй content/stats/two-columns/quote. Язык: русский.`;
+Правила:
+- Ровно ${count} слайдов
+- Слайд 1 = title, слайд ${count} = end
+- Между ними чередуй content/stats/two-columns/quote
+- Язык: русский`;
 
-    console.log(`🎯 Презентация: "${topic}" (${count} слайдов), API ключ: ${process.env.GEMINI_API_KEY ? 'есть' : 'НЕТ'}`);
+    console.log(`🎯 Презентация (только real-data): "${topic}" (${count} слайдов)`);
+    const aiResult = await callGeminiWithSearch(prompt, { jsonMode: true, retries: 2 });
+    console.log(`📝 Search generation: success=${aiResult.success}, textLen=${aiResult.text?.length || 0}`);
 
-    // Попытка 1: JSON mode
-    let aiResult = await callGemini(prompt, { jsonMode: true, retries: 2 });
-    console.log(`📝 Попытка 1 (JSON mode): success=${aiResult.success}, textLen=${aiResult.text?.length || 0}`);
-
-    if (aiResult.success) {
-      let presentation = parseJsonResponse(aiResult.text);
-      if (presentation && presentation.slides && presentation.slides.length > 0) {
-        presentation = ensureSlideCount(presentation, count, topic);
-        console.log(`✅ Gemini JSON mode: ${presentation.slides.length} слайдов`);
-        return res.json({ success: true, presentation, source: 'gemini' });
+    if (!aiResult.success) {
+      const msg = String(aiResult.error || '').toLowerCase();
+      if (msg.includes('quota') || msg.includes('429') || msg.includes('rate')) {
+        return res.status(429).json({
+          success: false,
+          message: 'Лимит AI запросов исчерпан. Попробуйте позже или обновите тариф/ключ.'
+        });
       }
-      console.error('⚠️ JSON mode: парсинг не дал слайдов. Ответ:', aiResult.text?.substring(0, 300));
+      return res.status(503).json({
+        success: false,
+        message: 'AI временно недоступен. Повторите попытку через минуту.'
+      });
     }
 
-    // Попытка 2: обычный Gemini (без jsonMode, чтобы не ограничивать формат)
-    aiResult = await callGemini(prompt, { retries: 2 });
-    console.log(`📝 Попытка 2 (обычный): success=${aiResult.success}, textLen=${aiResult.text?.length || 0}`);
-
-    if (aiResult.success) {
-      let presentation = parseJsonResponse(aiResult.text);
-      if (presentation && presentation.slides && presentation.slides.length > 0) {
-        presentation = ensureSlideCount(presentation, count, topic);
-        console.log(`✅ Gemini plain: ${presentation.slides.length} слайдов`);
-        return res.json({ success: true, presentation, source: 'gemini' });
-      }
-      console.error('⚠️ Plain mode: парсинг не дал слайдов. Ответ:', aiResult.text?.substring(0, 300));
+    let presentation = parseJsonResponse(aiResult.text);
+    if (!presentation || !presentation.slides || presentation.slides.length === 0) {
+      return res.status(502).json({
+        success: false,
+        message: 'AI вернул некорректный ответ. Попробуйте сформулировать тему короче.'
+      });
     }
 
-    // Попытка 3: Gemini с Search
-    aiResult = await callGeminiWithSearch(prompt);
-    console.log(`📝 Попытка 3 (search): success=${aiResult.success}, textLen=${aiResult.text?.length || 0}`);
-
-    if (aiResult.success) {
-      let presentation = parseJsonResponse(aiResult.text);
-      if (presentation && presentation.slides && presentation.slides.length > 0) {
-        presentation = ensureSlideCount(presentation, count, topic);
-        console.log(`✅ Gemini+Search: ${presentation.slides.length} слайдов`);
-        return res.json({ success: true, presentation, source: 'gemini-search' });
-      }
-      console.error('⚠️ Search mode: парсинг не дал слайдов. Ответ:', aiResult.text?.substring(0, 300));
-    }
-
-    // DEMO fallback
-    console.log('⚡ Все попытки AI провалились → DEMO');
-    const presentation = getDemoPresentationResponse(topic, count);
-    res.json({ success: true, presentation, source: 'demo' });
-
+    presentation = ensureSlideCount(presentation, count, topic);
+    return res.json({ success: true, presentation, source: 'gemini-search' });
   } catch (error) {
-    console.error('❌ Критическая ошибка:', error.message);
-    try {
-      const topic = extractTopic(req.body.topic || 'Презентация');
-      const presentation = getDemoPresentationResponse(topic, parseInt(req.body.slidesCount) || 8);
-      return res.json({ success: true, presentation, source: 'demo' });
-    } catch (e) {
-      res.status(500).json({ message: 'Ошибка генерации презентации', error: error.message });
-    }
+    console.error('❌ Критическая ошибка генерации презентации:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Внутренняя ошибка генерации презентации',
+      error: error.message
+    });
   }
 };
 
