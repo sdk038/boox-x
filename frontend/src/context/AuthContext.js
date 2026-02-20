@@ -85,11 +85,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    setUser(null);
+    setUser(GUEST_USER);
     setIsAuthenticated(false);
     localStorage.removeItem('token');
     localStorage.removeItem('currentUser');
-    // Не удаляем darkMode — тема остаётся для страницы логина
   };
 
   const updateUser = (updatedUser) => {

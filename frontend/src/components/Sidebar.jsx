@@ -1,12 +1,128 @@
 import React, { useState } from 'react';
-import { HomeAlt1, Dashboard, Gear, Folder, SignOut, Pin } from 'akar-icons';
+import { HomeAlt1, Dashboard, Gear, Folder, SignOut, Pin, Person } from 'akar-icons';
 import { useAuth } from '../context/AuthContext';
 import Logo from './Logo';
 import '../pages/Sidebar.css';
 
+const SidebarAuthPanel = ({ onClose }) => {
+  const [mode, setMode] = useState('login');
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login, register } = useAuth();
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError('');
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    if (mode === 'login') {
+      if (!formData.email || !formData.password) {
+        setError('Заполните все поля');
+        setLoading(false);
+        return;
+      }
+      const result = await login(formData.email, formData.password);
+      if (result?.success) {
+        onClose();
+      } else {
+        setError(result?.message || 'Ошибка входа');
+      }
+    } else {
+      if (!formData.name || !formData.email || !formData.password) {
+        setError('Заполните все поля');
+        setLoading(false);
+        return;
+      }
+      if (formData.password.length < 6) {
+        setError('Пароль — минимум 6 символов');
+        setLoading(false);
+        return;
+      }
+      const result = await register(formData);
+      if (result?.success) {
+        onClose();
+      } else {
+        setError(result?.message || 'Ошибка регистрации');
+      }
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="sidebar-auth-overlay" onClick={onClose}>
+      <div className="sidebar-auth-panel" onClick={(e) => e.stopPropagation()}>
+        <button className="sidebar-auth-close" onClick={onClose}>&times;</button>
+
+        <div className="sidebar-auth-header">
+          <Logo size={36} />
+          <h2>{mode === 'login' ? 'Вход' : 'Регистрация'}</h2>
+        </div>
+
+        <div className="sidebar-auth-tabs">
+          <button
+            className={mode === 'login' ? 'active' : ''}
+            onClick={() => { setMode('login'); setError(''); }}
+          >
+            Войти
+          </button>
+          <button
+            className={mode === 'register' ? 'active' : ''}
+            onClick={() => { setMode('register'); setError(''); }}
+          >
+            Создать аккаунт
+          </button>
+        </div>
+
+        {error && <div className="sidebar-auth-error">{error}</div>}
+
+        <form onSubmit={handleSubmit} className="sidebar-auth-form">
+          {mode === 'register' && (
+            <input
+              type="text"
+              name="name"
+              placeholder="Имя"
+              value={formData.name}
+              onChange={handleChange}
+              autoComplete="name"
+            />
+          )}
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleChange}
+            autoComplete="email"
+          />
+          <input
+            type="password"
+            name="password"
+            placeholder="Пароль"
+            value={formData.password}
+            onChange={handleChange}
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+          />
+          <button type="submit" className="sidebar-auth-submit" disabled={loading}>
+            {loading ? '...' : mode === 'login' ? 'Войти' : 'Зарегистрироваться'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const Sidebar = ({ activeTab, setActiveTab, onExpandChange, isPinned, onPinToggle }) => {
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [authPanelOpen, setAuthPanelOpen] = useState(false);
+
+  const isGuest = !user?.email;
 
   const handleLogout = () => {
     if (window.confirm('Вы действительно хотите выйти?')) {
@@ -80,13 +196,23 @@ const Sidebar = ({ activeTab, setActiveTab, onExpandChange, isPinned, onPinToggl
             <Gear size={20} />
           </button>
 
-          <button
-            className="bottom-btn logout-btn"
-            onClick={handleLogout}
-            title="Выйти"
-          >
-            <SignOut size={20} />
-          </button>
+          {isGuest ? (
+            <button
+              className="bottom-btn login-btn"
+              onClick={() => setAuthPanelOpen(true)}
+              title="Войти"
+            >
+              <Person size={20} />
+            </button>
+          ) : (
+            <button
+              className="bottom-btn logout-btn"
+              onClick={handleLogout}
+              title="Выйти"
+            >
+              <SignOut size={20} />
+            </button>
+          )}
         </div>
 
         <div className="right">
@@ -150,6 +276,15 @@ const Sidebar = ({ activeTab, setActiveTab, onExpandChange, isPinned, onPinToggl
               </button>
             )}
           </nav>
+
+          {isGuest && (
+            <div className="sidebar-guest-cta">
+              <p>Войдите, чтобы сохранять проекты</p>
+              <button onClick={() => setAuthPanelOpen(true)}>
+                Войти / Регистрация
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -199,7 +334,7 @@ const Sidebar = ({ activeTab, setActiveTab, onExpandChange, isPinned, onPinToggl
               </div>
               <div>
                 <h3>{user?.name}</h3>
-                <p>{user?.email}</p>
+                <p>{isGuest ? 'Гостевой режим' : user?.email}</p>
               </div>
             </div>
             <div className="mobile-menu-items">
@@ -217,13 +352,21 @@ const Sidebar = ({ activeTab, setActiveTab, onExpandChange, isPinned, onPinToggl
                   <span>🛡️</span> Админ
                 </button>
               )}
-              <button className="mobile-menu-logout" onClick={handleLogout}>
-                <span>🚪</span> Выйти
-              </button>
+              {isGuest ? (
+                <button className="mobile-menu-login" onClick={() => { setMobileMenuOpen(false); setAuthPanelOpen(true); }}>
+                  <span>🔑</span> Войти / Регистрация
+                </button>
+              ) : (
+                <button className="mobile-menu-logout" onClick={handleLogout}>
+                  <span>🚪</span> Выйти
+                </button>
+              )}
             </div>
           </div>
         </div>
       )}
+
+      {authPanelOpen && <SidebarAuthPanel onClose={() => setAuthPanelOpen(false)} />}
     </>
   );
 };
