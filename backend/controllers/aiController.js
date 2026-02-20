@@ -59,10 +59,22 @@ const parseJsonResponse = (text) => {
   try {
     return JSON.parse(cleaned);
   } catch (_) {}
+  // Ищем самый большой JSON-объект в тексте
   const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
     try {
       return JSON.parse(jsonMatch[0]);
+    } catch (_) {}
+    // Пробуем починить обрезанный JSON — закрыть скобки
+    let partial = jsonMatch[0];
+    const openBraces = (partial.match(/\{/g) || []).length;
+    const closeBraces = (partial.match(/\}/g) || []).length;
+    const openBrackets = (partial.match(/\[/g) || []).length;
+    const closeBrackets = (partial.match(/\]/g) || []).length;
+    partial += ']'.repeat(Math.max(0, openBrackets - closeBrackets));
+    partial += '}'.repeat(Math.max(0, openBraces - closeBraces));
+    try {
+      return JSON.parse(partial);
     } catch (_) {}
   }
   return null;
@@ -289,19 +301,25 @@ const getDemoPresentationResponse = (topic, count) => {
     }
   }
 
-  const slides = [];
-  slides.push({ type: 'title', title: matched ? matched.title : topic, subtitle: matched ? `Обзор ключевых фактов и данных` : `Анализ темы: ${topic}`, emoji: '🎯' });
+  const genericSlides = [
+    { type: 'content', title: `Введение в тему: ${topic}`, bullets: [`Определение и основные концепции "${topic}"`, 'Историческое развитие и ключевые этапы', 'Текущее состояние и основные игроки', 'Влияние на экономику и общество'], emoji: '📋' },
+    { type: 'stats', title: 'Ключевые показатели', stats: [{ value: '~$100 млрд+', label: 'Оценка рынка' }, { value: '15-25%', label: 'Ежегодный рост' }, { value: '100+', label: 'Стран-участников' }, { value: '2030', label: 'Горизонт прогнозов' }], emoji: '📊' },
+    { type: 'two-columns', title: 'Преимущества и вызовы', left: { heading: 'Сильные стороны', items: ['Растущий спрос и интерес', 'Технологическая готовность', 'Поддержка инвесторов'] }, right: { heading: 'Вызовы', items: ['Высокая конкуренция', 'Нехватка специалистов', 'Быстрые изменения рынка'] }, emoji: '⚖️' },
+    { type: 'quote', quote: 'Будущее принадлежит тем, кто верит в красоту своих мечтаний.', author: 'Элеонора Рузвельт', emoji: '💡' },
+    { type: 'content', title: 'Современные тренды', bullets: ['Интеграция с искусственным интеллектом', 'Автоматизация и оптимизация процессов', 'Глобализация и международное сотрудничество', 'Увеличение государственного финансирования'], emoji: '🚀' },
+    { type: 'stats', title: 'Прогнозы на будущее', stats: [{ value: '2-3x', label: 'Рост рынка к 2030' }, { value: '50%+', label: 'Автоматизация процессов' }, { value: 'Млн', label: 'Новых рабочих мест' }], emoji: '📈' },
+    { type: 'two-columns', title: 'Мировой опыт', left: { heading: 'Лидеры', items: ['США и Китай — основные инвесторы', 'Европа — регуляторный подход', 'Израиль — стартап-нация'] }, right: { heading: 'Развивающиеся', items: ['Индия — масштаб и кадры', 'ОАЭ — государственные инвестиции', 'Бразилия — природные ресурсы'] }, emoji: '🌍' },
+    { type: 'content', title: 'Практическое применение', bullets: ['Бизнес: оптимизация операций и снижение затрат', 'Образование: персонализированное обучение', 'Медицина: диагностика и лечение', 'Производство: автоматизация и контроль качества'], emoji: '🔧' },
+  ];
 
-  if (matched) {
-    const available = matched.slides.slice(0, Math.max(count - 2, 1));
-    slides.push(...available);
-  } else {
-    slides.push(
-      { type: 'content', title: `Ключевые аспекты: ${topic}`, bullets: [`Определение и основные концепции темы "${topic}"`, 'Историческое развитие и ключевые этапы становления', 'Текущее состояние отрасли и основные игроки рынка', 'Влияние на экономику, общество и технологический прогресс', 'Основные вызовы и нерешённые проблемы'], emoji: '📋', note: 'Для получения презентации с реальными данными используйте AI-генерацию' },
-      { type: 'stats', title: 'Обзор отрасли', stats: [{ value: '📈', label: 'Активный рост рынка' }, { value: '🌍', label: 'Глобальное влияние' }, { value: '💡', label: 'Инновационная сфера' }, { value: '🔮', label: 'Перспективное направление' }], emoji: '📊' },
-      { type: 'two-columns', title: 'Анализ перспектив', left: { heading: '✅ Сильные стороны', items: ['Растущий спрос и интерес', 'Поддержка инвесторов', 'Технологическая готовность'] }, right: { heading: '⚠️ Вызовы', items: ['Высокая конкуренция', 'Необходимость кадров', 'Быстрые изменения рынка'] }, emoji: '⚖️' },
-      { type: 'content', title: 'Перспективы развития', bullets: ['Ожидается значительный рост в ближайшие 5-10 лет', 'Интеграция с искусственным интеллектом и автоматизацией', 'Расширение применения в новых отраслях экономики', 'Увеличение государственного и частного финансирования'], emoji: '🚀' }
-    );
+  const contentPool = matched ? matched.slides : genericSlides;
+  const middleCount = count - 2; // без title и end
+
+  const slides = [];
+  slides.push({ type: 'title', title: matched ? matched.title : topic, subtitle: matched ? 'Обзор ключевых фактов и данных' : `Анализ темы: ${topic}`, emoji: '🎯' });
+
+  for (let i = 0; i < middleCount; i++) {
+    slides.push(contentPool[i % contentPool.length]);
   }
 
   slides.push({ type: 'end', title: 'Спасибо за внимание!', subtitle: 'Вопросы и обсуждение', emoji: '🙏' });
@@ -310,7 +328,7 @@ const getDemoPresentationResponse = (topic, count) => {
     title: matched ? matched.title : topic,
     subtitle: matched ? 'Обзор ключевых фактов и данных' : `Презентация: ${topic}`,
     author: 'AI Presentation',
-    slides: slides.slice(0, count)
+    slides
   };
 };
 
@@ -692,6 +710,72 @@ ${projectInfo.tasks.map(t => `- ${t.title} [${t.status}] [${t.priority}]`).join(
   }
 };
 
+// Гарантирует ровно count слайдов: title первый, end последний, контент между ними
+const ensureSlideCount = (presentation, count, topic) => {
+  if (!presentation || !presentation.slides) return presentation;
+  let slides = [...presentation.slides];
+
+  // Убеждаемся что первый — title
+  if (!slides.length || slides[0].type !== 'title') {
+    slides.unshift({ type: 'title', title: presentation.title || topic, subtitle: presentation.subtitle || '', emoji: '🎯' });
+  }
+
+  // Убеждаемся что последний — end
+  const lastIdx = slides.length - 1;
+  if (lastIdx < 0 || slides[lastIdx].type !== 'end') {
+    slides.push({ type: 'end', title: 'Спасибо за внимание!', subtitle: 'Вопросы и обсуждение', emoji: '🙏' });
+  }
+
+  // Если слайдов больше — обрезаем (сохраняем title и end)
+  if (slides.length > count) {
+    const middle = slides.slice(1, slides.length - 1).slice(0, count - 2);
+    slides = [slides[0], ...middle, slides[slides.length - 1]];
+  }
+
+  // Если слайдов меньше — дополняем контентом
+  while (slides.length < count) {
+    const contentIndex = slides.length - 1; // вставляем перед end
+    const num = slides.length - 1;
+    const types = ['content', 'stats', 'two-columns', 'content'];
+    const nextType = types[num % types.length];
+
+    let filler;
+    if (nextType === 'stats') {
+      filler = {
+        type: 'stats', title: `${topic} — ключевые показатели`,
+        stats: [
+          { value: '—', label: 'Данные обновляются' },
+          { value: '—', label: 'Нет данных' },
+          { value: '—', label: 'Нет данных' },
+        ],
+        emoji: '📊'
+      };
+    } else if (nextType === 'two-columns') {
+      filler = {
+        type: 'two-columns', title: `Анализ: ${topic}`,
+        left: { heading: 'Преимущества', items: ['Растущий потенциал', 'Широкое применение', 'Инновационность'] },
+        right: { heading: 'Вызовы', items: ['Конкуренция', 'Сложность внедрения', 'Нехватка кадров'] },
+        emoji: '⚖️'
+      };
+    } else {
+      filler = {
+        type: 'content', title: `Дополнительно: ${topic}`,
+        bullets: [
+          'Эта тема активно развивается в последние годы',
+          'Ожидается значительный рост в ближайшем будущем',
+          'Интеграция с новыми технологиями открывает перспективы',
+          'Важно учитывать текущие тренды и прогнозы'
+        ],
+        emoji: '📋'
+      };
+    }
+    slides.splice(contentIndex, 0, filler);
+  }
+
+  presentation.slides = slides;
+  return presentation;
+};
+
 // @desc    Генерация презентации
 // @route   POST /api/ai/generate-presentation
 // @access  Private
@@ -705,78 +789,86 @@ exports.generatePresentation = async (req, res) => {
 
     const count = Math.min(Math.max(parseInt(slidesCount) || 8, 3), 20);
 
-    const prompt = `Создай профессиональную презентацию на тему "${topic}".
-Используй актуальные реальные данные, факты, цифры и статистику.
+    const prompt = `Ты — генератор презентаций. Создай презентацию на тему: "${topic}".
 
-Количество слайдов: ровно ${count}.
+КРИТИЧЕСКИ ВАЖНО: верни РОВНО ${count} слайдов. НЕ МЕНЬШЕ и НЕ БОЛЬШЕ.
 
-Верни JSON объект со следующей структурой:
+Верни ТОЛЬКО валидный JSON (без markdown, без пояснений, без \`\`\`):
 {
-  "title": "Конкретное привлекательное название презентации",
-  "subtitle": "Подзаголовок с ключевой мыслью",
+  "title": "Название презентации",
+  "subtitle": "Подзаголовок",
   "author": "AI Presentation",
-  "slides": [массив из ${count} слайдов]
+  "slides": [ ... ровно ${count} объектов ... ]
 }
 
-Доступные типы слайдов:
-1. { "type": "title", "title": "...", "subtitle": "...", "emoji": "..." } — титульный, ОБЯЗАТЕЛЬНО первый
-2. { "type": "content", "title": "...", "bullets": ["пункт 1", "пункт 2", "пункт 3", "пункт 4"], "emoji": "...", "note": "опционально" } — контент с буллетами
-3. { "type": "stats", "title": "...", "stats": [{ "value": "$184 млрд", "label": "Объём рынка" }, ...ещё 2-3], "emoji": "..." } — статистика с РЕАЛЬНЫМИ числами
-4. { "type": "two-columns", "title": "...", "left": { "heading": "Заголовок", "items": ["...", "..."] }, "right": { "heading": "Заголовок", "items": ["...", "..."] }, "emoji": "..." } — две колонки
-5. { "type": "quote", "quote": "цитата", "author": "Имя Фамилия, должность", "emoji": "..." } — цитата реального человека
-6. { "type": "end", "title": "Спасибо за внимание!", "subtitle": "...", "emoji": "..." } — финальный, ОБЯЗАТЕЛЬНО последний
+Типы слайдов (используй ВСЕ типы, чередуя):
+1. title — { "type": "title", "title": "...", "subtitle": "...", "emoji": "🎯" }
+   ОБЯЗАТЕЛЬНО первый слайд.
+2. content — { "type": "content", "title": "...", "bullets": ["факт 1", "факт 2", "факт 3", "факт 4"], "emoji": "📋", "note": "опционально" }
+   Каждый bullet — конкретный факт с реальной цифрой/датой/именем.
+3. stats — { "type": "stats", "title": "...", "stats": [{"value": "$184 млрд", "label": "Объём рынка"}, ...ещё 2-3], "emoji": "📊" }
+   value — ВСЕГДА число/процент/сумма. НИКОГДА эмодзи.
+4. two-columns — { "type": "two-columns", "title": "...", "left": {"heading": "...", "items": ["...", "..."]}, "right": {"heading": "...", "items": ["...", "..."]}, "emoji": "⚖️" }
+5. quote — { "type": "quote", "quote": "цитата реального человека", "author": "Имя Фамилия, должность", "emoji": "💡" }
+6. end — { "type": "end", "title": "Спасибо за внимание!", "subtitle": "...", "emoji": "🙏" }
+   ОБЯЗАТЕЛЬНО последний слайд.
 
 Правила:
-- Первый слайд ВСЕГДА type "title", последний ВСЕГДА type "end"
-- Чередуй типы: content, stats, two-columns, quote между первым и последним
-- В stats поле value ОБЯЗАТЕЛЬНО содержит число/процент/сумму (НЕ эмодзи)
-- Все bullets — конкретные факты с цифрами, не абстрактные фразы
-- Каждый emoji — один символ эмодзи
-- quote — от реального известного человека, связанного с темой`;
+- Слайд 1 = title, слайд ${count} = end, между ними — content/stats/two-columns/quote
+- Все данные и факты должны быть РЕАЛЬНЫМИ и АКТУАЛЬНЫМИ
+- Bullets — 4 штуки, каждый содержит конкретику (числа, даты, имена)
+- НЕ повторяй одинаковые типы подряд, чередуй их
+- Язык: русский`;
 
-    // Попытка 1: Gemini с Google Search (реальные данные из интернета)
     console.log(`🎯 Генерация презентации: "${topic}" (${count} слайдов)`);
-    let aiResult = await callGeminiWithSearch(prompt);
+
+    // Попытка 1: Gemini JSON mode (самый надёжный для структуры)
+    let aiResult = await callGemini(prompt, { jsonMode: true, retries: 2 });
 
     if (aiResult.success) {
-      const presentation = parseJsonResponse(aiResult.text);
+      let presentation = parseJsonResponse(aiResult.text);
       if (presentation && presentation.slides && presentation.slides.length > 0) {
-        console.log(`✅ Презентация сгенерирована через ${aiResult.grounded ? 'Gemini+Search' : 'Gemini'}: ${presentation.slides.length} слайдов`);
-        return res.json({
-          success: true,
-          presentation,
-          source: aiResult.grounded ? 'gemini-search' : 'gemini'
-        });
-      }
-      console.error('⚠️ Gemini Search: JSON распарсился, но слайды пустые. Пробуем JSON mode...');
-    }
-
-    // Попытка 2: Gemini с принудительным JSON mode (без search, но гарантированный JSON)
-    aiResult = await callGemini(prompt, { jsonMode: true, retries: 2 });
-
-    if (aiResult.success) {
-      const presentation = parseJsonResponse(aiResult.text);
-      if (presentation && presentation.slides && presentation.slides.length > 0) {
-        console.log(`✅ Презентация сгенерирована через Gemini JSON mode: ${presentation.slides.length} слайдов`);
+        presentation = ensureSlideCount(presentation, count, topic);
+        console.log(`✅ Презентация: Gemini JSON mode, ${presentation.slides.length} слайдов`);
         return res.json({ success: true, presentation, source: 'gemini' });
       }
-      console.error('⚠️ Gemini JSON mode: не удалось получить валидные слайды');
-      console.error('⚠️ Ответ Gemini:', aiResult.text?.substring(0, 500));
+      console.error('⚠️ Gemini JSON mode: слайды пустые, пробуем Search...');
+    }
+
+    // Попытка 2: Gemini с Google Search (реальные данные)
+    aiResult = await callGeminiWithSearch(prompt);
+
+    if (aiResult.success) {
+      let presentation = parseJsonResponse(aiResult.text);
+      if (presentation && presentation.slides && presentation.slides.length > 0) {
+        presentation = ensureSlideCount(presentation, count, topic);
+        console.log(`✅ Презентация: Gemini+Search, ${presentation.slides.length} слайдов`);
+        return res.json({ success: true, presentation, source: 'gemini-search' });
+      }
+      console.error('⚠️ Gemini Search: не удалось получить слайды');
+    }
+
+    // Попытка 3: обычный Gemini без JSON mode (более свободный формат)
+    aiResult = await callGemini(prompt, { retries: 1 });
+
+    if (aiResult.success) {
+      let presentation = parseJsonResponse(aiResult.text);
+      if (presentation && presentation.slides && presentation.slides.length > 0) {
+        presentation = ensureSlideCount(presentation, count, topic);
+        console.log(`✅ Презентация: Gemini fallback, ${presentation.slides.length} слайдов`);
+        return res.json({ success: true, presentation, source: 'gemini' });
+      }
     }
 
     // Только если AI полностью недоступен — DEMO fallback
     console.log('⚡ AI недоступен, используем DEMO режим');
     const presentation = getDemoPresentationResponse(topic, count);
-    res.json({
-      success: true,
-      presentation,
-      source: 'demo'
-    });
+    res.json({ success: true, presentation, source: 'demo' });
 
   } catch (error) {
     console.error('❌ Критическая ошибка генерации презентации:', error);
     try {
-      const presentation = getDemoPresentationResponse(req.body.topic || 'Презентация', 8);
+      const presentation = getDemoPresentationResponse(req.body.topic || 'Презентация', parseInt(req.body.slidesCount) || 8);
       return res.json({ success: true, presentation, source: 'demo' });
     } catch (e) {
       res.status(500).json({ message: 'Ошибка генерации презентации', error: error.message });
