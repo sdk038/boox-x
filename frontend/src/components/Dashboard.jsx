@@ -93,9 +93,15 @@ const HomeContent = ({ user, onNavigate }) => {
   const [recentBoards, setRecentBoards] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const isGuest = !user?.email;
+
   useEffect(() => {
-    loadHomeData();
-  }, []);
+    if (!isGuest) {
+      loadHomeData();
+    } else {
+      setLoading(false);
+    }
+  }, [isGuest]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadHomeData = async () => {
     try {
