@@ -8,25 +8,16 @@ const {
   chat,
   generatePresentation
 } = require('../controllers/aiController');
-const { protect } = require('../middleware/auth');
+const { protect, optionalAuth } = require('../middleware/auth');
 
-// Все маршруты требуют аутентификации
-router.use(protect);
+// Доступно гостям (optionalAuth загрузит user если токен есть)
+router.post('/generate-presentation', optionalAuth, generatePresentation);
+router.post('/chat', optionalAuth, chat);
 
-// Генерация проекта
-router.post('/generate-project', generateProject);
-router.post('/create-project', createProjectFromAI);
-
-// Генерация задачи
-router.post('/generate-task', generateTask);
-
-// Анализ проекта
-router.post('/analyze-project', analyzeProject);
-
-// Чат с AI
-router.post('/chat', chat);
-
-// Генерация презентации
-router.post('/generate-presentation', generatePresentation);
+// Остальные маршруты требуют аутентификации
+router.post('/generate-project', protect, generateProject);
+router.post('/create-project', protect, createProjectFromAI);
+router.post('/generate-task', protect, generateTask);
+router.post('/analyze-project', protect, analyzeProject);
 
 module.exports = router;

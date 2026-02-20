@@ -5,21 +5,16 @@ const User = require('../models/User');
 exports.protect = async (req, res, next) => {
   let token;
 
-  // Проверка наличия токена в заголовках
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
   }
 
-  // Проверка существования токена
   if (!token) {
     return res.status(401).json({ message: 'Не авторизован, нет токена' });
   }
 
   try {
-    // Верификация токена
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Получение пользователя из токена
     req.user = await User.findById(decoded.id).select('-password');
 
     if (!req.user) {
@@ -30,4 +25,27 @@ exports.protect = async (req, res, next) => {
   } catch (error) {
     return res.status(401).json({ message: 'Не авторизован, неверный токен' });
   }
+};
+
+// Опциональная авторизация — пропускает гостей, но загружает user если токен есть
+exports.optionalAuth = async (req, res, next) => {
+  let token;
+
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (!token) {
+    req.user = null;
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = await User.findById(decoded.id).select('-password');
+  } catch (_) {
+    req.user = null;
+  }
+
+  next();
 };

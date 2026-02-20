@@ -887,8 +887,9 @@ exports.chat = async (req, res) => {
       return res.status(400).json({ message: 'Сообщение не может быть пустым' });
     }
 
-    // Логируем AI чат
-    await logActivity(req.user._id, 'ai_chat', `Запрос: ${message.substring(0, 100)}`, req);
+    if (req.user) {
+      await logActivity(req.user._id, 'ai_chat', `Запрос: ${message.substring(0, 100)}`, req);
+    }
 
     // Пробуем настоящий AI
     const prompt = `Ты — Daler AI, тёплый, умный и заботливый AI-ассистент. Тебя создал **Daler Sabirov Kodirovich**. Если спрашивают кто тебя создал — всегда отвечай что твой создатель Daler Sabirov Kodirovich.
