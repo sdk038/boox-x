@@ -132,7 +132,7 @@ const SlideContent = ({ slide, index, total }) => {
   }
 };
 
-const PresentationEditor = ({ presentation, theme, onClose, onThemeChange }) => {
+const PresentationEditor = ({ presentation, theme, onClose, onThemeChange, source }) => {
   const [current, setCurrent] = useState(0);
   const [isFs, setIsFs] = useState(false);
   const ref = useRef(null);
@@ -254,6 +254,12 @@ const PresentationEditor = ({ presentation, theme, onClose, onThemeChange }) => 
       <div className="ps-toolbar">
         <button className="ps-toolbar-btn" onClick={onClose}>← Назад</button>
         <h3 className="ps-toolbar-title">{presentation.title}</h3>
+        {source === 'demo' && (
+          <span className="ps-source-badge ps-source-demo" title="AI недоступен, показаны шаблонные данные">DEMO</span>
+        )}
+        {source && source !== 'demo' && (
+          <span className="ps-source-badge ps-source-ai" title="Сгенерировано AI с реальными данными">AI ✓</span>
+        )}
         <div className="ps-toolbar-right">
           <select
             value={theme}
@@ -323,16 +329,22 @@ const Presentations = () => {
   const [topic, setTopic] = useState('');
   const [slideCount, setSlideCount] = useState(8);
   const [theme, setTheme] = useState('modern');
+  const [source, setSource] = useState('');
 
   const handleGenerate = async () => {
     if (!topic.trim()) { setError('Укажите тему презентации'); return; }
     try {
       setLoading(true);
       setError('');
+      setSource('');
       trackingAPI.track('ai_generate_presentation', `Презентация: ${topic}`, 'presentations');
       const response = await aiAPI.generatePresentation(topic, slideCount, theme);
       if (response.data.success) {
         setPresentation(response.data.presentation);
+        setSource(response.data.source || '');
+        if (response.data.source === 'demo') {
+          console.warn('Презентация сгенерирована в DEMO режиме (AI недоступен)');
+        }
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Ошибка генерации презентации');
@@ -346,8 +358,9 @@ const Presentations = () => {
       <PresentationEditor
         presentation={presentation}
         theme={theme}
-        onClose={() => setPresentation(null)}
+        onClose={() => { setPresentation(null); setSource(''); }}
         onThemeChange={setTheme}
+        source={source}
       />
     );
   }
