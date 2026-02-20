@@ -11,18 +11,17 @@ export const useAuth = () => {
   return context;
 };
 
+const GUEST_USER = { name: 'Гость', email: '', role: 'user' };
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(GUEST_USER);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Проверяем наличие токена и загружаем пользователя
     const token = localStorage.getItem('token');
     if (token) {
       loadUser();
-    } else {
-      setLoading(false);
     }
   }, []);
 
@@ -37,8 +36,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Ошибка загрузки пользователя:', error);
       localStorage.removeItem('token');
       localStorage.removeItem('currentUser');
-    } finally {
-      setLoading(false);
+      setUser(GUEST_USER);
     }
   };
 
