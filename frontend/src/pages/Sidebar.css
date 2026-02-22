@@ -500,6 +500,70 @@
   cursor: not-allowed;
 }
 
+.sidebar-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10020;
+  padding: 20px;
+}
+
+.sidebar-confirm-modal {
+  width: min(420px, 100%);
+  background: #1d1f20;
+  border: 1px solid #2f3338;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+}
+
+.sidebar-confirm-modal h3 {
+  margin: 0 0 10px;
+  color: #f2f4f8;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.sidebar-confirm-modal p {
+  margin: 0;
+  color: #b8bdc7;
+  font-size: 17px;
+}
+
+.sidebar-confirm-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.sidebar-confirm-actions button {
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sidebar-confirm-actions .btn-cancel {
+  background: #2f3440;
+  color: #d8dcec;
+}
+
+.sidebar-confirm-actions .btn-confirm {
+  background: linear-gradient(135deg, #4066ff, #6d5bfa);
+  color: #fff;
+}
+
+.sidebar-confirm-actions .btn-confirm:hover,
+.sidebar-confirm-actions .btn-cancel:hover {
+  filter: brightness(1.06);
+}
+
 /* Light theme overrides */
 body:not(.dark-theme) .sidebar-auth-panel {
   background: #ffffff;
@@ -539,6 +603,25 @@ body:not(.dark-theme) .sidebar-auth-close {
 body:not(.dark-theme) .sidebar-auth-close:hover {
   background: #f0f0f0;
   color: #333;
+}
+
+body:not(.dark-theme) .sidebar-confirm-modal {
+  background: #ffffff;
+  border-color: #e4e7ee;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+body:not(.dark-theme) .sidebar-confirm-modal h3 {
+  color: #101322;
+}
+
+body:not(.dark-theme) .sidebar-confirm-modal p {
+  color: #4c5569;
+}
+
+body:not(.dark-theme) .sidebar-confirm-actions .btn-cancel {
+  background: #edf0f7;
+  color: #25304a;
 }
 
 /* ============================================ */
@@ -592,6 +675,27 @@ body:not(.dark-theme) .sidebar-auth-close:hover {
     transition: all 0.2s;
     border-radius: 12px;
     min-width: 60px;
+  }
+
+  .sidebar-confirm-modal {
+    border-radius: 14px;
+    padding: 18px;
+  }
+
+  .sidebar-confirm-modal h3 {
+    font-size: 21px;
+  }
+
+  .sidebar-confirm-modal p {
+    font-size: 15px;
+  }
+
+  .sidebar-confirm-actions {
+    justify-content: stretch;
+  }
+
+  .sidebar-confirm-actions button {
+    flex: 1;
   }
 
   .mobile-nav-btn svg {

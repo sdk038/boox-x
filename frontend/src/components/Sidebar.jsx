@@ -132,13 +132,12 @@ const Sidebar = ({activeTab, setActiveTab, onExpandChange, isPinned, onPinToggle
     const { t } = useLanguage();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [authPanelOpen, setAuthPanelOpen] = useState(false);
+    const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
     const isGuest = !user?.email;
 
     const handleLogout = () => {
-        if (window.confirm(t('sidebar.confirmLogout'))) {
-            logout();
-        }
+        setLogoutConfirmOpen(true);
     };
 
     const handleMouseEnter = () => {
@@ -380,6 +379,28 @@ const Sidebar = ({activeTab, setActiveTab, onExpandChange, isPinned, onPinToggle
             )}
 
             {authPanelOpen && <SidebarAuthPanel onClose={() => setAuthPanelOpen(false)}/>}
+            {logoutConfirmOpen && (
+                <div className="sidebar-confirm-overlay" onClick={() => setLogoutConfirmOpen(false)}>
+                    <div className="sidebar-confirm-modal" onClick={(e) => e.stopPropagation()}>
+                        <h3>{t('sidebar.logout')}</h3>
+                        <p>{t('sidebar.confirmLogout')}</p>
+                        <div className="sidebar-confirm-actions">
+                            <button className="btn-cancel" onClick={() => setLogoutConfirmOpen(false)}>
+                                {t('common.cancel')}
+                            </button>
+                            <button
+                                className="btn-confirm"
+                                onClick={() => {
+                                    setLogoutConfirmOpen(false);
+                                    logout();
+                                }}
+                            >
+                                {t('sidebar.logout')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };
