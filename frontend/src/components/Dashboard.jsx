@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import Sidebar from './Sidebar';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { trackingAPI, boardsAPI, tasksAPI, filesAPI } from '../services/api';
 import '../pages/Dashboard.css';
 
@@ -8,7 +9,7 @@ const AdminPanel = lazy(() => import('./AdminPanel'));
 const AIAssistant = lazy(() => import('./AIAssistant'));
 const Boards = lazy(() => import('./Boards'));
 const Files = lazy(() => import('./Files'));
-const Settings = lazy(() => import('./Settings'));
+const Settings = lazy(() => import('./SettingsPage'));
 const Presentations = lazy(() => import('./Presentations'));
 
 const TAB_ROUTES = {
@@ -21,16 +22,6 @@ const TAB_ROUTES = {
   ai: 'ai'
 };
 
-const TAB_TITLES = {
-  home: 'Главная',
-  boards: 'Доски',
-  files: 'Файлы',
-  presentations: 'Презентации',
-  settings: 'Настройки',
-  admin: 'Админ панель',
-  ai: 'AI Ассистент'
-};
-
 // Получить таб из хэша URL
 const getTabFromHash = () => {
   const hash = window.location.hash.replace('#/', '').replace('#', '');
@@ -38,24 +29,24 @@ const getTabFromHash = () => {
 };
 
 // Время суток для приветствия
-const getGreeting = () => {
+const getGreeting = (t) => {
   const hour = new Date().getHours();
-  if (hour < 6) return 'Доброй ночи';
-  if (hour < 12) return 'Доброе утро';
-  if (hour < 18) return 'Добрый день';
-  return 'Добрый вечер';
+  if (hour < 6) return t('dashboard.greetingNight');
+  if (hour < 12) return t('dashboard.greetingMorning');
+  if (hour < 18) return t('dashboard.greetingDay');
+  return t('dashboard.greetingEvening');
 };
 
 // Сколько времени прошло
-const timeAgo = (date) => {
+const timeAgo = (date, t, language) => {
   const now = new Date();
   const d = new Date(date);
   const diff = Math.floor((now - d) / 1000);
-  if (diff < 60) return 'только что';
-  if (diff < 3600) return `${Math.floor(diff / 60)} мин. назад`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} ч. назад`;
-  if (diff < 172800) return 'вчера';
-  return d.toLocaleDateString('ru-RU');
+  if (diff < 60) return t('dashboard.justNow');
+  if (diff < 3600) return `${Math.floor(diff / 60)} ${t('dashboard.minAgo')}`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} ${t('dashboard.hoursAgo')}`;
+  if (diff < 172800) return t('dashboard.yesterday');
+  return d.toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU');
 };
 
 // eslint-disable-next-line no-unused-vars
@@ -89,6 +80,7 @@ const getActivityText = (action) => {
 };
 
 const HomeContent = ({ user, onNavigate }) => {
+  const { t, language } = useLanguage();
   const [stats, setStats] = useState({ boards: 0, tasks: 0, files: 0 });
   const [recentBoards, setRecentBoards] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -134,29 +126,29 @@ const HomeContent = ({ user, onNavigate }) => {
   const features = [
     {
       icon: '📋',
-      title: 'Канбан доски',
-      description: 'Создавайте проекты, управляйте задачами с помощью удобных Kanban-досок',
+      title: language === 'en' ? 'Kanban boards' : 'Канбан доски',
+      description: language === 'en' ? 'Create projects and manage tasks with flexible Kanban boards' : 'Создавайте проекты, управляйте задачами с помощью удобных Kanban-досок',
       action: 'boards',
       color: '#4066ff'
     },
     {
       icon: '🤖',
-      title: 'AI Ассистент',
-      description: 'Генерация проектов, задач, презентаций и ответов на любые вопросы через AI',
+      title: language === 'en' ? 'AI Assistant' : 'AI Ассистент',
+      description: language === 'en' ? 'Generate projects, tasks, presentations and get answers with AI' : 'Генерация проектов, задач, презентаций и ответов на любые вопросы через AI',
       action: 'ai',
       color: '#8b5cf6'
     },
     {
       icon: '📁',
-      title: 'Файловое хранилище',
-      description: 'Загружайте и храните файлы ваших проектов в одном месте',
+      title: language === 'en' ? 'File storage' : 'Файловое хранилище',
+      description: language === 'en' ? 'Upload and keep your project files in one place' : 'Загружайте и храните файлы ваших проектов в одном месте',
       action: 'files',
       color: '#10b981'
     },
     {
       icon: '⚙️',
-      title: 'Настройки',
-      description: 'Настройте тему, уведомления и язык — всё под вас',
+      title: t('settings.title'),
+      description: language === 'en' ? 'Customize theme, notifications and language' : 'Настройте тему, уведомления и язык — всё под вас',
       action: 'settings',
       color: '#f59e0b'
     }
@@ -167,11 +159,11 @@ const HomeContent = ({ user, onNavigate }) => {
       {/* Welcome Banner */}
       <div className="home-welcome-banner">
         <div className="home-welcome-text">
-          <h1>{getGreeting()}, {user?.name}! 👋</h1>
-          <p className="subtitle">Это ваш центр управления. Здесь вы видите обзор своего рабочего пространства.</p>
+          <h1>{getGreeting(t)}, {user?.name}! 👋</h1>
+          <p className="subtitle">{t('dashboard.subtitle')}</p>
         </div>
         <div className="home-welcome-date">
-          {new Date().toLocaleDateString('ru-RU', { 
+          {new Date().toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU', {
             weekday: 'long', 
             year: 'numeric', 
             month: 'long', 
@@ -186,21 +178,21 @@ const HomeContent = ({ user, onNavigate }) => {
           <div className="home-stat-icon" style={{ background: 'linear-gradient(135deg, #4066ff, #6d5bfa)' }}>📋</div>
           <div className="home-stat-info">
             <h2>{loading ? '...' : stats.boards}</h2>
-            <p>Досок</p>
+            <p>{t('dashboard.boardsCount')}</p>
           </div>
         </div>
         <div className="home-stat-card" onClick={() => onNavigate('boards')}>
           <div className="home-stat-icon" style={{ background: 'linear-gradient(135deg, #10b981, #34d399)' }}>✅</div>
           <div className="home-stat-info">
             <h2>{loading ? '...' : stats.tasks}</h2>
-            <p>Задач</p>
+            <p>{t('dashboard.tasksCount')}</p>
           </div>
         </div>
         <div className="home-stat-card" onClick={() => onNavigate('files')}>
           <div className="home-stat-icon" style={{ background: 'linear-gradient(135deg, #f59e0b, #fbbf24)' }}>📁</div>
           <div className="home-stat-info">
             <h2>{loading ? '...' : stats.files}</h2>
-            <p>Файлов</p>
+            <p>{t('dashboard.filesCount')}</p>
           </div>
         </div>
       </div>
@@ -208,23 +200,23 @@ const HomeContent = ({ user, onNavigate }) => {
       {/* Quick Actions */}
       <div className="home-quick-actions">
         <button className="home-quick-btn" onClick={() => onNavigate('boards')}>
-          <span>📋</span> Создать доску
+          <span>📋</span> {t('dashboard.createBoard')}
         </button>
         <button className="home-quick-btn" onClick={() => onNavigate('ai')}>
-          <span>🤖</span> Спросить AI
+          <span>🤖</span> {t('dashboard.askAI')}
         </button>
         <button className="home-quick-btn" onClick={() => onNavigate('files')}>
-          <span>📤</span> Загрузить файл
+          <span>📤</span> {t('dashboard.uploadFile')}
         </button>
         <button className="home-quick-btn" onClick={() => onNavigate('settings')}>
-          <span>⚙️</span> Настройки
+          <span>⚙️</span> {t('settings.title')}
         </button>
       </div>
 
       {/* Features Section */}
       <div className="home-section-title">
-        <h2>🚀 Что умеет Daler AI</h2>
-        <p>Познакомьтесь с возможностями платформы</p>
+        <h2>{t('dashboard.whatCanDo')}</h2>
+        <p>{t('dashboard.whatCanDoDesc')}</p>
       </div>
 
       <div className="home-features-grid">
@@ -250,7 +242,7 @@ const HomeContent = ({ user, onNavigate }) => {
       {recentBoards.length > 0 && (
         <>
           <div className="home-section-title">
-            <h2>📋 Ваши последние проекты</h2>
+            <h2>{t('dashboard.recentProjects')}</h2>
           </div>
           <div className="home-recent-boards">
             {recentBoards.map((board) => (
@@ -265,10 +257,10 @@ const HomeContent = ({ user, onNavigate }) => {
                 />
                 <div className="home-board-info">
                   <h4>{board.title || board.name}</h4>
-                  <p>{board.description || 'Без описания'}</p>
+                  <p>{board.description || t('dashboard.noDescription')}</p>
                 </div>
                 <span className="home-board-date">
-                  {timeAgo(board.createdAt || board.updatedAt)}
+                  {timeAgo(board.createdAt || board.updatedAt, t, language)}
                 </span>
               </div>
             ))}
@@ -277,7 +269,7 @@ const HomeContent = ({ user, onNavigate }) => {
               onClick={() => onNavigate('boards')}
             >
               <span className="home-board-add-icon">+</span>
-              <p>Создать новый проект</p>
+              <p>{t('dashboard.createNewProject')}</p>
             </div>
           </div>
         </>
@@ -288,30 +280,40 @@ const HomeContent = ({ user, onNavigate }) => {
         <div className="home-ai-promo-content">
           <div className="home-ai-promo-icon">🤖</div>
           <div>
-            <h3>Попробуйте AI Ассистент</h3>
-            <p>Сгенерируйте проект, презентацию или задайте любой вопрос — AI поможет!</p>
+            <h3>{t('dashboard.tryAI')}</h3>
+            <p>{t('dashboard.tryAIDesc')}</p>
           </div>
         </div>
-        <button className="home-ai-promo-btn">Попробовать →</button>
+        <button className="home-ai-promo-btn">{t('dashboard.try')} →</button>
       </div>
     </div>
   );
 };
 
 const Dashboard = () => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState(getTabFromHash);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [isSidebarPinned, setIsSidebarPinned] = useState(false);
   const { user } = useAuth();
+  const TAB_TITLES = {
+    home: t('dashboard.tabTitles.home'),
+    boards: t('dashboard.tabTitles.boards'),
+    files: t('dashboard.tabTitles.files'),
+    presentations: t('dashboard.tabTitles.presentations'),
+    settings: t('dashboard.tabTitles.settings'),
+    admin: t('dashboard.tabTitles.admin'),
+    ai: t('dashboard.tabTitles.ai')
+  };
 
   // Обновляем URL хэш при смене таба + трекинг
-  const handleTabChange = useCallback((tab) => {
+  const handleTabChange = (tab) => {
     setActiveTab(tab);
     window.location.hash = `#/${tab}`;
     document.title = `${TAB_TITLES[tab] || 'Daler AI'} — Daler AI`;
     // Отслеживаем переход на страницу
     trackingAPI.track('page_view', `Просмотр: ${TAB_TITLES[tab] || tab}`, tab);
-  }, []);
+  };
 
   // Слушаем кнопки назад/вперед в браузере
   useEffect(() => {

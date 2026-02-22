@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { aiAPI, trackingAPI } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 import '../pages/AIAssistant.css';
 
 
@@ -12,7 +13,7 @@ const escapeHtml = (str) => {
 };
 
 
-const parseMarkdown = (text) => {
+const parseMarkdown = (text, t = (v) => v) => {
   if (!text) return '';
   const codeBlocks = [];
   let processed = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (match, lang, code) => {
@@ -22,7 +23,7 @@ const parseMarkdown = (text) => {
       `<div class="code-wrapper">` +
         `<div class="code-header">` +
           `<span class="code-lang">${langLabel}</span>` +
-          `<button class="copy-btn" data-code-idx="${idx}" onclick="window.__copyCode(this)">📋 Копировать</button>` +
+          `<button class="copy-btn" data-code-idx="${idx}" onclick="window.__copyCode(this)">📋 ${t('ai.copy')}</button>` +
         `</div>` +
         `<pre><code class="code-block ${lang}" data-raw-idx="${idx}">${escapeHtml(code.trim())}</code></pre>` +
       `</div>`
@@ -78,10 +79,10 @@ if (typeof window !== 'undefined') {
     if (codeEl) {
       const text = codeEl.textContent;
       navigator.clipboard.writeText(text).then(() => {
-        btn.textContent = '✅ Скопировано!';
+        btn.textContent = `✅ ${window.__aiI18n?.copied || 'Copied!'}`;
         btn.classList.add('copied');
         setTimeout(() => {
-          btn.textContent = '📋 Копировать';
+          btn.textContent = `📋 ${window.__aiI18n?.copy || 'Copy'}`;
           btn.classList.remove('copied');
         }, 2000);
       }).catch(() => {
@@ -91,10 +92,10 @@ if (typeof window !== 'undefined') {
         textarea.select();
         document.execCommand('copy');
         document.body.removeChild(textarea);
-        btn.textContent = '✅ Скопировано!';
+        btn.textContent = `✅ ${window.__aiI18n?.copied || 'Copied!'}`;
         btn.classList.add('copied');
         setTimeout(() => {
-          btn.textContent = '📋 Копировать';
+          btn.textContent = `📋 ${window.__aiI18n?.copy || 'Copy'}`;
           btn.classList.remove('copied');
         }, 2000);
       });
@@ -102,16 +103,17 @@ if (typeof window !== 'undefined') {
   };
 }
 
-const MessageContent = ({ content }) => {
+const MessageContent = ({ content, t }) => {
   return (
     <div 
       className="message-text"
-      dangerouslySetInnerHTML={{ __html: parseMarkdown(content) }}
+      dangerouslySetInnerHTML={{ __html: parseMarkdown(content, t) }}
     />
   );
 };
 
 const AIAssistant = () => {
+  const { t, language } = useLanguage();
   const [activeMode, setActiveMode] = useState('chat');
   const [loading, setLoading] = useState(false);
   const [isWaiting, setIsWaiting] = useState(false);
@@ -132,9 +134,16 @@ const AIAssistant = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, loading]);
 
+  useEffect(() => {
+    window.__aiI18n = {
+      copy: t('ai.copy'),
+      copied: t('ai.copied')
+    };
+  }, [t]);
+
   const handleGenerateProject = async () => {
     if (!projectDescription.trim()) {
-      setError('Пожалуйста, опишите проект');
+      setError(t('ai.describeProjectError'));
       return;
     }
 
@@ -142,14 +151,14 @@ const AIAssistant = () => {
       setLoading(true);
       setError('');
       
-      trackingAPI.track('ai_generate_project', `Генерация проекта: ${projectDescription.substring(0, 80)}`, 'ai');
+      trackingAPI.track('ai_generate_project', `Project generation: ${projectDescription.substring(0, 80)}`, 'ai');
       const response = await aiAPI.generateProject(projectDescription, projectPreferences);
       
       if (response.data.success) {
         setResult(response.data.project);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Ошибка генерации проекта');
+      setError(err.response?.data?.message || t('ai.projectGenerateError'));
     } finally {
       setLoading(false);
     }
@@ -163,13 +172,13 @@ const AIAssistant = () => {
       const response = await aiAPI.createProjectFromAI(result);
       
       if (response.data.success) {
-        alert('✅ Проект создан успешно!');
+        alert(`✅ ${t('ai.projectCreated')}`);
         setResult(null);
         setProjectDescription('');
         setProjectPreferences('');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Ошибка создания проекта');
+      setError(err.response?.data?.message || t('ai.projectCreateError'));
     } finally {
       setLoading(false);
     }
@@ -220,7 +229,7 @@ const AIAssistant = () => {
       setError('');
       
       const recentMessages = chatMessages.slice(-6).map(m => 
-        `${m.role === 'user' ? 'Пользователь' : 'AI'}: ${m.content}`
+        `${m.role === 'user' ? t('ai.userLabel') : 'AI'}: ${m.content}`
       ).join('\n');
       
       const response = await aiAPI.chat(currentInput, recentMessages || null);
@@ -234,7 +243,7 @@ const AIAssistant = () => {
       const serverMessage = err.response?.data?.message;
       const errorMsg = { 
         role: 'assistant', 
-        content: serverMessage || '⚠️ Произошла ошибка. Попробуйте ещё раз.' 
+        content: serverMessage || t('ai.chatGenericError')
       };
       setChatMessages(prev => [...prev, errorMsg]);
       setLoading(false);
@@ -257,8 +266,8 @@ const AIAssistant = () => {
   return (
     <div className="ai-assistant">
       <div className="ai-header">
-        <h1>🤖 AI Ассистент</h1>
-        <p>Powered by Daler AI — задавайте любые вопросы</p>
+        <h1>🤖 {t('ai.title')}</h1>
+        <p>{t('ai.subtitle')}</p>
       </div>
 
       <div className="ai-modes">
@@ -266,13 +275,13 @@ const AIAssistant = () => {
           className={activeMode === 'chat' ? 'active' : ''}
           onClick={() => setActiveMode('chat')}
         >
-          💬 Чат с AI
+          💬 {t('ai.chatMode')}
         </button>
         <button 
           className={activeMode === 'generate' ? 'active' : ''}
           onClick={() => setActiveMode('generate')}
         >
-          ✨ Генерация проекта
+          ✨ {t('ai.projectMode')}
         </button>
       </div>
 
@@ -286,20 +295,20 @@ const AIAssistant = () => {
       {activeMode === 'generate' && (
         <div className="ai-generate-mode">
           <div className="ai-input-section">
-            <h3>Опишите ваш проект</h3>
+            <h3>{t('ai.describeProject')}</h3>
             <textarea
               value={projectDescription}
               onChange={(e) => setProjectDescription(e.target.value)}
-              placeholder="Например: Создать мобильное приложение для доставки еды с функциями заказа, отслеживания курьера и оплаты"
+              placeholder={t('ai.describeProjectPlaceholder')}
               rows="4"
               disabled={loading}
             />
 
-            <h3>Дополнительные предпочтения (опционально)</h3>
+            <h3>{t('ai.preferences')}</h3>
             <textarea
               value={projectPreferences}
               onChange={(e) => setProjectPreferences(e.target.value)}
-              placeholder="Например: Срок - 3 месяца, команда из 5 человек, бюджет ограничен"
+              placeholder={t('ai.preferencesPlaceholder')}
               rows="2"
               disabled={loading}
             />
@@ -309,7 +318,7 @@ const AIAssistant = () => {
               onClick={handleGenerateProject}
               disabled={loading || !projectDescription.trim()}
             >
-              {loading ? '⏳ Генерация...' : '✨ Сгенерировать проект'}
+              {loading ? `⏳ ${t('ai.generating')}` : `✨ ${t('ai.generateProject')}`}
             </button>
           </div>
 
@@ -319,19 +328,19 @@ const AIAssistant = () => {
               <p className="project-description">{result.description}</p>
 
               <div className="tasks-preview">
-                <h3>📋 Задачи ({result.tasks?.length || 0})</h3>
+                <h3>📋 {t('ai.tasks')} ({result.tasks?.length || 0})</h3>
                 {result.tasks?.map((task, index) => (
                   <div key={index} className="task-item">
                     <div className="task-header">
                       <span className="task-title">{task.title}</span>
                       <span className={`priority-badge ${task.priority}`}>
                         {task.priority === 'high' ? '🔴' : task.priority === 'medium' ? '🟡' : '🟢'}
-                        {task.priority}
+                        {t(`ai.priority.${task.priority}`) || task.priority}
                       </span>
                     </div>
                     <p className="task-desc">{task.description}</p>
                     {task.estimatedDays && (
-                      <span className="task-estimate">⏱️ {task.estimatedDays} дней</span>
+                      <span className="task-estimate">⏱️ {task.estimatedDays} {t('ai.days')}</span>
                     )}
                   </div>
                 ))}
@@ -339,7 +348,7 @@ const AIAssistant = () => {
 
               {result.recommendations && result.recommendations.length > 0 && (
                 <div className="recommendations">
-                  <h3>💡 Рекомендации</h3>
+                  <h3>💡 {t('ai.recommendations')}</h3>
                   <ul>
                     {result.recommendations.map((rec, index) => (
                       <li key={index}>{rec}</li>
@@ -354,14 +363,14 @@ const AIAssistant = () => {
                   onClick={handleCreateProject}
                   disabled={loading}
                 >
-                  ✅ Создать этот проект
+                  ✅ {t('ai.createThisProject')}
                 </button>
                 <button 
                   className="ai-button secondary"
                   onClick={handleGenerateProject}
                   disabled={loading}
                 >
-                  🔄 Сгенерировать заново
+                  🔄 {t('ai.regenerate')}
                 </button>
               </div>
             </div>
@@ -375,24 +384,24 @@ const AIAssistant = () => {
             {chatMessages.length === 0 ? (
               <div className="chat-welcome">
                 <div className="welcome-icon">🤖</div>
-                <h2>Привет! Я ваш AI-ассистент</h2>
-                <p>Я могу помочь с чем угодно:</p>
+                <h2>{t('ai.welcomeTitle')}</h2>
+                <p>{t('ai.welcomeSubtitle')}</p>
                 <div className="welcome-cards">
-                  <div className="welcome-card" onClick={() => { setChatInput('Напиши мне навбар на React'); }}>
+                  <div className="welcome-card" onClick={() => { setChatInput(t('ai.prompts.code')); }}>
                     <span className="card-icon">💻</span>
-                    <span>Написать код</span>
+                    <span>{t('ai.cardCode')}</span>
                   </div>
-                  <div className="welcome-card" onClick={() => { setChatInput('Создай план проекта интернет-магазина'); }}>
+                  <div className="welcome-card" onClick={() => { setChatInput(t('ai.prompts.plan')); }}>
                     <span className="card-icon">📋</span>
-                    <span>План проекта</span>
+                    <span>{t('ai.cardPlan')}</span>
                   </div>
-                  <div className="welcome-card" onClick={() => { setChatInput('Как оптимизировать React приложение?'); }}>
+                  <div className="welcome-card" onClick={() => { setChatInput(t('ai.prompts.tips')); }}>
                     <span className="card-icon">⚡</span>
-                    <span>Советы</span>
+                    <span>{t('ai.cardTips')}</span>
                   </div>
-                  <div className="welcome-card" onClick={() => { setChatInput('Объясни как работает async/await'); }}>
+                  <div className="welcome-card" onClick={() => { setChatInput(t('ai.prompts.learn')); }}>
                     <span className="card-icon">📚</span>
-                    <span>Обучение</span>
+                    <span>{t('ai.cardLearn')}</span>
                   </div>
                 </div>
               </div>
@@ -414,11 +423,11 @@ const AIAssistant = () => {
                             </span>
                           )}
                           {msg.typing && (
-                            <span className="ai-source-badge">⌨️ печатает...</span>
+                            <span className="ai-source-badge">⌨️ {t('ai.typing')}</span>
                           )}
                         </div>
                         <div className="ai-response-body">
-                          <MessageContent content={msg.content} />
+                          <MessageContent content={msg.content} t={t} />
                         </div>
                       </div>
                     )}
@@ -431,7 +440,7 @@ const AIAssistant = () => {
                 <div className="ai-response-block">
                   <div className="ai-response-header">
                     <span className="ai-badge">🤖 AI</span>
-                    <span className="ai-source-badge">🤔 думает...</span>
+                    <span className="ai-source-badge">🤔 {t('ai.thinking')}</span>
                   </div>
                   <div className="ai-response-body">
                     <div className="typing-indicator">
@@ -448,7 +457,7 @@ const AIAssistant = () => {
 
           <div className="chat-input-area">
             {chatMessages.length > 0 && (
-              <button onClick={clearChat} className="clear-chat-btn" title="Очистить чат">
+              <button onClick={clearChat} className="clear-chat-btn" title={t('ai.clearChat')}>
                 🗑️
               </button>
             )}
@@ -457,7 +466,7 @@ const AIAssistant = () => {
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Спросите что-нибудь... (Enter для отправки)"
+              placeholder={language === 'en' ? 'Ask anything... (Enter to send)' : 'Спросите что-нибудь... (Enter для отправки)'}
               disabled={loading}
             />
             <button 

@@ -1,7 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { boardsAPI } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 const Boards = () => {
+  const { t } = useLanguage();
   const [boards, setBoards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -10,7 +12,7 @@ const Boards = () => {
   const [newBoardColor, setNewBoardColor] = useState('#4066ff');
   const [creating, setCreating] = useState(false);
 
-  const loadBoards = async () => {
+  const loadBoards = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -18,15 +20,15 @@ const Boards = () => {
       const data = response.data.boards || response.data || [];
       setBoards(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.response?.data?.message || 'Не удалось загрузить доски');
+      setError(err.response?.data?.message || t('boards.loadError'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     loadBoards();
-  }, []);
+  }, [loadBoards]);
 
   const filteredBoards = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -61,42 +63,41 @@ const Boards = () => {
       setNewBoardName('');
       setNewBoardColor('#4066ff');
     } catch (err) {
-      setError(err.response?.data?.message || 'Не удалось создать доску');
+      setError(err.response?.data?.message || t('boards.createError'));
     } finally {
       setCreating(false);
     }
   };
 
   const handleDeleteBoard = async (boardId) => {
-    if (!window.confirm('Удалить доску и все связанные задачи?')) return;
+    if (!window.confirm(t('boards.confirmDelete'))) return;
     try {
       setError('');
       await boardsAPI.delete(boardId);
       setBoards((prev) => prev.filter((board) => board._id !== boardId));
     } catch (err) {
-      setError(err.response?.data?.message || 'Не удалось удалить доску');
+      setError(err.response?.data?.message || t('boards.deleteError'));
     }
   };
 
   return (
     <div className="content-section">
       <div className="section-header">
-        <h1>Boards</h1>
-        <button className="btn-primary" onClick={loadBoards}>Обновить</button>
+        <h1>{t('boards.title')}</h1>
+        <button className="btn-primary" onClick={loadBoards}>{t('common.refresh')}</button>
       </div>
 
       {error && (
-        <div className="dev-notice" style={{ borderColor: 'rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.08)' }}>
+        <div className="dev-notice dev-notice-error">
           <span className="dev-notice-icon">⚠️</span>
           <p>{error}</p>
         </div>
       )}
 
-      <div style={{ display: 'grid', gap: 10, gridTemplateColumns: '1fr 140px 140px', marginBottom: 20 }}>
+      <div className="boards-create-form">
         <input
-          className="home-quick-btn"
-          style={{ border: '1px solid rgba(255,255,255,0.15)', textAlign: 'left' }}
-          placeholder="Название новой доски"
+          className="home-quick-btn board-input"
+          placeholder={t('boards.createPlaceholder')}
           value={newBoardName}
           onChange={(e) => setNewBoardName(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleCreateBoard()}
@@ -105,18 +106,17 @@ const Boards = () => {
           type="color"
           value={newBoardColor}
           onChange={(e) => setNewBoardColor(e.target.value)}
-          style={{ width: '100%', minHeight: 44, borderRadius: 10, border: 'none', background: 'transparent' }}
+          className="board-color-input"
         />
         <button className="btn-primary" onClick={handleCreateBoard} disabled={creating || !newBoardName.trim()}>
-          {creating ? 'Создание...' : '+ Создать'}
+          {creating ? t('boards.creating') : `+ ${t('common.create')}`}
         </button>
       </div>
 
-      <div style={{ marginBottom: 20 }}>
+      <div className="board-search-wrap">
         <input
-          className="home-quick-btn"
-          style={{ width: '100%', border: '1px solid rgba(255,255,255,0.15)', textAlign: 'left' }}
-          placeholder="Поиск доски по названию"
+          className="home-quick-btn board-search-input"
+          placeholder={t('boards.searchPlaceholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -125,7 +125,7 @@ const Boards = () => {
       {loading ? (
         <div className="dev-notice">
           <span className="dev-notice-icon">⏳</span>
-          <p>Загружаем доски...</p>
+          <p>{t('boards.loadingBoards')}</p>
         </div>
       ) : (
         <>
@@ -133,48 +133,48 @@ const Boards = () => {
         {filteredBoards.map((board) => (
           <div key={board._id} className="board-card" style={{ borderLeft: `4px solid ${board.color || '#4066ff'}` }}>
             <h3>{board.name}</h3>
-            <p>{getTasksCount(board)} активных задач</p>
+            <p>{getTasksCount(board)} {t('boards.activeTasks')}</p>
             <div className="board-footer">
-              <span className="board-status">Активна</span>
-              <button className="btn-link" onClick={() => handleDeleteBoard(board._id)}>Удалить</button>
+              <span className="board-status">{t('boards.active')}</span>
+              <button className="btn-link" onClick={() => handleDeleteBoard(board._id)}>{t('common.delete')}</button>
             </div>
           </div>
         ))}
       </div>
 
       <div className="board-list">
-        <h2>Все доски</h2>
-        <table className="data-table">
+        <h2>{t('boards.allBoards')}</h2>
+        <table className="data-table mobile-data-table">
           <thead>
             <tr>
-              <th>Название</th>
-              <th>Задачи</th>
-              <th>Статус</th>
-              <th>Последнее обновление</th>
-              <th>Действия</th>
+              <th>{t('boards.colName')}</th>
+              <th>{t('boards.colTasks')}</th>
+              <th>{t('boards.colStatus')}</th>
+              <th>{t('boards.colUpdated')}</th>
+              <th>{t('boards.colActions')}</th>
             </tr>
           </thead>
           <tbody>
             {filteredBoards.map((board) => (
               <tr key={board._id}>
-                <td>
+                <td data-label={t('boards.colName')}>
                   <div className="board-name">
                     <div className="color-indicator" style={{ backgroundColor: board.color || '#4066ff' }}></div>
                     {board.name}
                   </div>
                 </td>
-                <td>{getTasksCount(board)}</td>
-                <td><span className="status-badge">Активна</span></td>
-                <td>{formatDate(board.updatedAt || board.createdAt)}</td>
-                <td>
+                <td data-label={t('boards.colTasks')}>{getTasksCount(board)}</td>
+                <td data-label={t('boards.colStatus')}><span className="status-badge">{t('boards.active')}</span></td>
+                <td data-label={t('boards.colUpdated')}>{formatDate(board.updatedAt || board.createdAt)}</td>
+                <td data-label={t('boards.colActions')}>
                   <button className="btn-icon" onClick={() => handleDeleteBoard(board._id)}>🗑️</button>
                 </td>
               </tr>
             ))}
             {!filteredBoards.length && (
               <tr>
-                <td colSpan="5" style={{ textAlign: 'center', opacity: 0.7 }}>
-                  Ничего не найдено
+                <td colSpan="5" className="table-empty">
+                  {t('common.notFound')}
                 </td>
               </tr>
             )}

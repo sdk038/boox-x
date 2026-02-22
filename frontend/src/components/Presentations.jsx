@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { aiAPI, trackingAPI } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 import '../pages/Presentations.css';
 
 const THEMES = [
@@ -133,6 +134,7 @@ const SlideContent = ({ slide, index, total }) => {
 };
 
 const PresentationEditor = ({ presentation, theme, onClose, onThemeChange, source }) => {
+  const { t } = useLanguage();
   const [current, setCurrent] = useState(0);
   const [isFs, setIsFs] = useState(false);
   const ref = useRef(null);
@@ -252,7 +254,7 @@ const PresentationEditor = ({ presentation, theme, onClose, onThemeChange, sourc
   return (
     <div className={`ps-editor ${isFs ? 'fullscreen' : ''}`} ref={ref}>
       <div className="ps-toolbar">
-        <button className="ps-toolbar-btn" onClick={onClose}>← Назад</button>
+        <button className="ps-toolbar-btn" onClick={onClose}>← {t('presentations.back')}</button>
         <h3 className="ps-toolbar-title">{presentation.title}</h3>
         {source === 'demo' && (
           <span className="ps-source-badge ps-source-demo" title="AI недоступен, показаны шаблонные данные">DEMO</span>
@@ -270,9 +272,9 @@ const PresentationEditor = ({ presentation, theme, onClose, onThemeChange, sourc
               <option key={t.id} value={t.id}>{t.icon} {t.name}</option>
             ))}
           </select>
-          <button className="ps-toolbar-btn" onClick={exportHTML}>📥 Экспорт</button>
+          <button className="ps-toolbar-btn" onClick={exportHTML}>📥 {t('presentations.export')}</button>
           <button className="ps-toolbar-btn" onClick={toggleFs}>
-            {isFs ? '⬜ Свернуть' : '⬛ Весь экран'}
+            {isFs ? `⬜ ${t('presentations.collapse')}` : `⬛ ${t('presentations.fullscreen')}`}
           </button>
         </div>
       </div>
@@ -323,6 +325,7 @@ const EXAMPLE_TOPICS = [
 ];
 
 const Presentations = () => {
+  const { t } = useLanguage();
   const [presentation, setPresentation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -332,7 +335,7 @@ const Presentations = () => {
   const [source, setSource] = useState('');
 
   const handleGenerate = async () => {
-    if (!topic.trim()) { setError('Укажите тему презентации'); return; }
+    if (!topic.trim()) { setError(t('presentations.setTopicError')); return; }
     try {
       setLoading(true);
       setError('');
@@ -347,7 +350,7 @@ const Presentations = () => {
         }
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Ошибка генерации презентации');
+      setError(err.response?.data?.message || t('presentations.generateError'));
     } finally {
       setLoading(false);
     }
@@ -369,8 +372,8 @@ const Presentations = () => {
     <div className="ps-page">
       <div className="ps-hero">
         <div className="ps-hero-icon">📊</div>
-        <h1>Создать презентацию</h1>
-        <p>AI сгенерирует профессиональную презентацию за секунды</p>
+        <h1>{t('presentations.title')}</h1>
+        <p>{t('presentations.subtitle')}</p>
       </div>
 
       {error && (
@@ -382,12 +385,12 @@ const Presentations = () => {
 
       <div className="ps-form">
         <div className="ps-field">
-          <label>Тема презентации</label>
+          <label>{t('presentations.topic')}</label>
           <input
             type="text"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="Например: Искусственный интеллект в медицине"
+            placeholder={t('presentations.topicPlaceholder')}
             disabled={loading}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
             className="ps-input"
@@ -395,7 +398,7 @@ const Presentations = () => {
         </div>
 
         <div className="ps-field">
-          <label>Тема оформления</label>
+          <label>{t('presentations.theme')}</label>
           <div className="ps-themes">
             {THEMES.map(t => (
               <div
@@ -416,7 +419,7 @@ const Presentations = () => {
         </div>
 
         <div className="ps-field">
-          <label>Количество слайдов</label>
+          <label>{t('presentations.slidesCount')}</label>
           <div className="ps-counts">
             {[5, 8, 10, 15, 20].map(n => (
               <button
@@ -436,15 +439,15 @@ const Presentations = () => {
           disabled={loading || !topic.trim()}
         >
           {loading ? (
-            <><span className="ps-spinner" /> Генерация...</>
+            <><span className="ps-spinner" /> {t('presentations.generating')}</>
           ) : (
-            '✨ Создать презентацию'
+            `✨ ${t('presentations.generate')}`
           )}
         </button>
       </div>
 
       <div className="ps-examples">
-        <h3>Попробуйте:</h3>
+        <h3>{t('presentations.try')}</h3>
         <div className="ps-chips">
           {EXAMPLE_TOPICS.map((t, i) => (
             <button

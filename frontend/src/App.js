@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import Dashboard from "./components/Dashboard";
 import './App.css';
 
@@ -10,6 +11,11 @@ import './App.css';
     } else {
         document.body.classList.remove('dark-theme');
     }
+})();
+
+(function initLanguage() {
+    const lang = localStorage.getItem('language') || 'ru';
+    document.documentElement.lang = lang;
 })();
 
 const AppContent = () => {
@@ -36,9 +42,11 @@ const AppContent = () => {
 
 const App = () => {
     return (
-        <AuthProvider>
-            <AppContent />
-        </AuthProvider>
+        <LanguageProvider>
+            <AuthProvider>
+                <AppContent />
+            </AuthProvider>
+        </LanguageProvider>
     );
 };
 

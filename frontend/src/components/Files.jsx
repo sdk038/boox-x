@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { filesAPI } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 const getFileIcon = (type) => {
   const lower = String(type || '').toLowerCase();
@@ -20,13 +21,14 @@ const getFileIcon = (type) => {
 };
 
 const Files = () => {
+  const { t } = useLanguage();
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
 
-  const loadFiles = async () => {
+  const loadFiles = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -34,15 +36,15 @@ const Files = () => {
       const data = response.data.files || response.data || [];
       setFiles(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.response?.data?.message || 'Не удалось загрузить файлы');
+      setError(err.response?.data?.message || t('files.loadError'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     loadFiles();
-  }, []);
+  }, [loadFiles]);
 
   const filteredFiles = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -84,7 +86,7 @@ const Files = () => {
         await loadFiles();
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Не удалось загрузить файл');
+      setError(err.response?.data?.message || t('files.uploadError'));
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -92,41 +94,40 @@ const Files = () => {
   };
 
   const handleDelete = async (fileId) => {
-    if (!window.confirm('Удалить файл?')) return;
+    if (!window.confirm(t('files.confirmDelete'))) return;
     try {
       setError('');
       await filesAPI.delete(fileId);
       setFiles((prev) => prev.filter((file) => file._id !== fileId));
     } catch (err) {
-      setError(err.response?.data?.message || 'Не удалось удалить файл');
+      setError(err.response?.data?.message || t('files.deleteError'));
     }
   };
 
   return (
     <div className="content-section">
       <div className="section-header">
-        <h1>Files</h1>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn-primary" onClick={loadFiles}>Обновить</button>
-          <label className="btn-primary" style={{ cursor: uploading ? 'not-allowed' : 'pointer', opacity: uploading ? 0.7 : 1 }}>
-            {uploading ? 'Загрузка...' : '+ Загрузить файл'}
+        <h1>{t('files.title')}</h1>
+        <div className="files-header-actions">
+          <button className="btn-primary" onClick={loadFiles}>{t('common.refresh')}</button>
+          <label className={`btn-primary file-upload-label ${uploading ? 'is-loading' : ''}`}>
+            {uploading ? t('files.uploading') : `+ ${t('files.upload')}`}
             <input type="file" style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
           </label>
         </div>
       </div>
 
       {error && (
-        <div className="dev-notice" style={{ borderColor: 'rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.08)' }}>
+        <div className="dev-notice dev-notice-error">
           <span className="dev-notice-icon">⚠️</span>
           <p>{error}</p>
         </div>
       )}
 
-      <div style={{ marginBottom: 20 }}>
+      <div className="files-search-wrap">
         <input
-          className="home-quick-btn"
-          style={{ width: '100%', border: '1px solid rgba(255,255,255,0.15)', textAlign: 'left' }}
-          placeholder="Поиск файла по названию"
+          className="home-quick-btn file-search-input"
+          placeholder={t('files.searchPlaceholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -135,7 +136,7 @@ const Files = () => {
       {loading ? (
         <div className="dev-notice">
           <span className="dev-notice-icon">⏳</span>
-          <p>Загружаем файлы...</p>
+          <p>{t('files.loadingFiles')}</p>
         </div>
       ) : (
         <>
@@ -152,32 +153,32 @@ const Files = () => {
         ))}
       </div>
       <div className="file-list">
-        <h2>Все файлы</h2>
-        <table className="data-table">
+        <h2>{t('files.allFiles')}</h2>
+        <table className="data-table mobile-data-table">
           <thead>
             <tr>
-              <th>Название</th>
-              <th>Тип</th>
-              <th>Размер</th>
-              <th>Дата загрузки</th>
-              <th>Действия</th>
+              <th>{t('files.colName')}</th>
+              <th>{t('files.colType')}</th>
+              <th>{t('files.colSize')}</th>
+              <th>{t('files.colDate')}</th>
+              <th>{t('files.colActions')}</th>
             </tr>
           </thead>
           <tbody>
             {filteredFiles.map((file) => (
               <tr key={file._id}>
-                <td>
+                <td data-label={t('files.colName')}>
                   <div className="file-name">
                     <span className="file-icon-small">{getFileIcon(file.type)}</span>
                     {file.name}
                   </div>
                 </td>
-                <td>{getTypeLabel(file.type)}</td>
-                <td>{formatSize(file.size)}</td>
-                <td>{formatDate(file.uploadedAt)}</td>
-                <td>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <a className="btn-link" href={file.url} target="_blank" rel="noreferrer">Открыть</a>
+                <td data-label={t('files.colType')}>{getTypeLabel(file.type)}</td>
+                <td data-label={t('files.colSize')}>{formatSize(file.size)}</td>
+                <td data-label={t('files.colDate')}>{formatDate(file.uploadedAt)}</td>
+                <td data-label={t('files.colActions')}>
+                  <div className="file-actions-cell">
+                    <a className="btn-link" href={file.url} target="_blank" rel="noreferrer">{t('files.open')}</a>
                     <button className="btn-icon" onClick={() => handleDelete(file._id)}>🗑️</button>
                   </div>
                 </td>
@@ -185,8 +186,8 @@ const Files = () => {
             ))}
             {!filteredFiles.length && (
               <tr>
-                <td colSpan="5" style={{ textAlign: 'center', opacity: 0.7 }}>
-                  Ничего не найдено
+                <td colSpan="5" className="table-empty">
+                  {t('common.notFound')}
                 </td>
               </tr>
             )}

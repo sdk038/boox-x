@@ -63,9 +63,57 @@
   border-radius: 50%;
 }
 
-.left img {
-  width: 40px;
-  margin: 34px 0 40px;
+.sidebar-presentation-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  display: block;
+  margin: 0;
+  filter: brightness(0) invert(0.72);
+  transition: filter 0.2s ease;
+}
+
+.sidebar-presentation-icon-large {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  display: block;
+  margin: 0;
+  filter: brightness(0) invert(0.72);
+  transition: filter 0.2s ease;
+}
+
+.sidebar-ai-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  display: block;
+  margin: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.sidebar-ai-icon-large {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  display: block;
+  margin: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.left button:hover .sidebar-presentation-icon,
+.left button:hover .sidebar-ai-icon,
+.right button:hover .sidebar-presentation-icon-large,
+.right button:hover .sidebar-ai-icon-large {
+  opacity: 0.95;
+  transform: scale(1.04);
+}
+
+.left button.active .sidebar-presentation-icon,
+.left button.active .sidebar-ai-icon,
+.right button.active .sidebar-presentation-icon-large,
+.right button.active .sidebar-ai-icon-large {
+  opacity: 1;
 }
 
 .left button {
@@ -562,6 +610,18 @@ body:not(.dark-theme) .sidebar-auth-close:hover {
   .mobile-nav-icon {
     font-size: 22px;
     line-height: 1;
+  }
+
+  .mobile-ai-icon {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    display: block;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  .mobile-nav-btn.active .mobile-ai-icon {
+    opacity: 1;
   }
 
   /* Mobile "More" Menu */

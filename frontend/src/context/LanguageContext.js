@@ -1,0 +1,430 @@
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+
+const translations = {
+  ru: {
+    common: {
+      loading: 'Загрузка...',
+      save: 'Сохранить',
+      cancel: 'Отмена',
+      refresh: 'Обновить',
+      create: 'Создать',
+      delete: 'Удалить',
+      search: 'Поиск',
+      notFound: 'Ничего не найдено'
+    },
+    sidebar: {
+      hello: 'Привет',
+      settings: 'Настройки',
+      presentations: 'Презентации',
+      files: 'Файлы',
+      boards: 'Доски',
+      more: 'Ещё',
+      guestMode: 'Гостевой режим',
+      login: 'Войти',
+      register: 'Регистрация',
+      loginRegister: 'Войти / Регистрация',
+      logout: 'Выйти',
+      authTitleLogin: 'Вход',
+      authTitleRegister: 'Регистрация',
+      createAccount: 'Создать аккаунт',
+      fillAllFields: 'Заполните все поля',
+      minPassword: 'Пароль — минимум 6 символов',
+      loginError: 'Ошибка входа',
+      registerError: 'Ошибка регистрации',
+      saveProjectsPrompt: 'Войдите, чтобы сохранять проекты',
+      confirmLogout: 'Вы действительно хотите выйти?',
+      pin: 'Закрепить',
+      unpin: 'Открепить',
+      home: 'Главная',
+      admin: 'Админ'
+    },
+    settings: {
+      title: 'Настройки',
+      profileInfo: 'Информация профиля',
+      editProfile: 'Редактировать профиль',
+      notifications: 'Настройки уведомлений',
+      pushNotifications: 'Push уведомления',
+      pushNotificationsDesc: 'Получать уведомления о новых задачах',
+      emailNotifications: 'Email уведомления',
+      emailNotificationsDesc: 'Получать обновления на email',
+      appearance: 'Внешний вид',
+      darkTheme: 'Темная тема',
+      darkThemeDesc: 'Переключить на темную тему',
+      language: 'Язык',
+      languageDesc: 'Выберите язык интерфейса',
+      languageRu: 'Русский',
+      languageEn: 'English',
+      profileUpdated: '✅ Профиль обновлен',
+      updateError: '❌ Ошибка обновления',
+      saved: '✅ Сохранено',
+      saveError: '❌ Ошибка',
+      editProfileTitle: 'Редактировать профиль',
+      name: 'Имя',
+      email: 'Email',
+      enterName: 'Введите имя',
+      enterEmail: 'Введите email'
+    },
+    dashboard: {
+      tabTitles: {
+        home: 'Главная',
+        boards: 'Доски',
+        files: 'Файлы',
+        presentations: 'Презентации',
+        settings: 'Настройки',
+        admin: 'Админ панель',
+        ai: 'AI Ассистент'
+      },
+      greetingNight: 'Доброй ночи',
+      greetingMorning: 'Доброе утро',
+      greetingDay: 'Добрый день',
+      greetingEvening: 'Добрый вечер',
+      subtitle: 'Это ваш центр управления. Здесь вы видите обзор своего рабочего пространства.',
+      boardsCount: 'Досок',
+      tasksCount: 'Задач',
+      filesCount: 'Файлов',
+      createBoard: 'Создать доску',
+      askAI: 'Спросить AI',
+      uploadFile: 'Загрузить файл',
+      whatCanDo: '🚀 Что умеет Daler AI',
+      whatCanDoDesc: 'Познакомьтесь с возможностями платформы',
+      recentProjects: '📋 Ваши последние проекты',
+      noDescription: 'Без описания',
+      createNewProject: 'Создать новый проект',
+      tryAI: 'Попробуйте AI Ассистент',
+      tryAIDesc: 'Сгенерируйте проект, презентацию или задайте любой вопрос — AI поможет!',
+      try: 'Попробовать',
+      justNow: 'только что',
+      minAgo: 'мин. назад',
+      hoursAgo: 'ч. назад',
+      yesterday: 'вчера'
+    },
+    boards: {
+      title: 'Доски',
+      loadError: 'Не удалось загрузить доски',
+      createError: 'Не удалось создать доску',
+      deleteError: 'Не удалось удалить доску',
+      createPlaceholder: 'Название новой доски',
+      searchPlaceholder: 'Поиск доски по названию',
+      loadingBoards: 'Загружаем доски...',
+      activeTasks: 'активных задач',
+      active: 'Активна',
+      allBoards: 'Все доски',
+      colName: 'Название',
+      colTasks: 'Задачи',
+      colStatus: 'Статус',
+      colUpdated: 'Последнее обновление',
+      colActions: 'Действия',
+      creating: 'Создание...',
+      confirmDelete: 'Удалить доску и все связанные задачи?'
+    },
+    files: {
+      title: 'Файлы',
+      loadError: 'Не удалось загрузить файлы',
+      uploadError: 'Не удалось загрузить файл',
+      deleteError: 'Не удалось удалить файл',
+      uploading: 'Загрузка...',
+      upload: 'Загрузить файл',
+      searchPlaceholder: 'Поиск файла по названию',
+      loadingFiles: 'Загружаем файлы...',
+      allFiles: 'Все файлы',
+      colName: 'Название',
+      colType: 'Тип',
+      colSize: 'Размер',
+      colDate: 'Дата загрузки',
+      colActions: 'Действия',
+      open: 'Открыть',
+      confirmDelete: 'Удалить файл?'
+    },
+    ai: {
+      title: 'AI Ассистент',
+      subtitle: 'Powered by Daler AI — задавайте любые вопросы',
+      chatMode: 'Чат с AI',
+      projectMode: 'Генерация проекта',
+      describeProject: 'Опишите ваш проект',
+      describeProjectPlaceholder: 'Например: Создать мобильное приложение для доставки еды с функциями заказа, отслеживания курьера и оплаты',
+      preferences: 'Дополнительные предпочтения (опционально)',
+      preferencesPlaceholder: 'Например: Срок - 3 месяца, команда из 5 человек, бюджет ограничен',
+      generating: 'Генерация...',
+      generateProject: 'Сгенерировать проект',
+      tasks: 'Задачи',
+      recommendations: 'Рекомендации',
+      days: 'дней',
+      createThisProject: 'Создать этот проект',
+      regenerate: 'Сгенерировать заново',
+      welcomeTitle: 'Привет! Я ваш AI-ассистент',
+      welcomeSubtitle: 'Я могу помочь с чем угодно:',
+      cardCode: 'Написать код',
+      cardPlan: 'План проекта',
+      cardTips: 'Советы',
+      cardLearn: 'Обучение',
+      typing: 'печатает...',
+      thinking: 'думает...',
+      clearChat: 'Очистить чат',
+      describeProjectError: 'Пожалуйста, опишите проект',
+      projectGenerateError: 'Ошибка генерации проекта',
+      projectCreated: 'Проект создан успешно!',
+      projectCreateError: 'Ошибка создания проекта',
+      userLabel: 'Пользователь',
+      chatGenericError: '⚠️ Произошла ошибка. Попробуйте ещё раз.',
+      copy: 'Копировать',
+      copied: 'Скопировано!',
+      prompts: {
+        code: 'Напиши мне навбар на React',
+        plan: 'Создай план проекта интернет-магазина',
+        tips: 'Как оптимизировать React приложение?',
+        learn: 'Объясни как работает async/await'
+      },
+      priority: {
+        high: 'высокий',
+        medium: 'средний',
+        low: 'низкий'
+      }
+    },
+    presentations: {
+      title: 'Создать презентацию',
+      subtitle: 'AI сгенерирует профессиональную презентацию за секунды',
+      topic: 'Тема презентации',
+      topicPlaceholder: 'Например: Искусственный интеллект в медицине',
+      theme: 'Тема оформления',
+      slidesCount: 'Количество слайдов',
+      generate: 'Создать презентацию',
+      generating: 'Генерация...',
+      try: 'Попробуйте:',
+      setTopicError: 'Укажите тему презентации',
+      generateError: 'Ошибка генерации презентации',
+      back: 'Назад',
+      export: 'Экспорт',
+      fullscreen: 'Весь экран',
+      collapse: 'Свернуть'
+    }
+  },
+  en: {
+    common: {
+      loading: 'Loading...',
+      save: 'Save',
+      cancel: 'Cancel',
+      refresh: 'Refresh',
+      create: 'Create',
+      delete: 'Delete',
+      search: 'Search',
+      notFound: 'Nothing found'
+    },
+    sidebar: {
+      hello: 'Hello',
+      settings: 'Settings',
+      presentations: 'Presentations',
+      files: 'Files',
+      boards: 'Boards',
+      more: 'More',
+      guestMode: 'Guest mode',
+      login: 'Login',
+      register: 'Register',
+      loginRegister: 'Login / Register',
+      logout: 'Logout',
+      authTitleLogin: 'Login',
+      authTitleRegister: 'Register',
+      createAccount: 'Create account',
+      fillAllFields: 'Fill all fields',
+      minPassword: 'Password must be at least 6 characters',
+      loginError: 'Login error',
+      registerError: 'Registration error',
+      saveProjectsPrompt: 'Login to save your projects',
+      confirmLogout: 'Are you sure you want to logout?',
+      pin: 'Pin',
+      unpin: 'Unpin',
+      home: 'Home',
+      admin: 'Admin'
+    },
+    settings: {
+      title: 'Settings',
+      profileInfo: 'Profile information',
+      editProfile: 'Edit profile',
+      notifications: 'Notification settings',
+      pushNotifications: 'Push notifications',
+      pushNotificationsDesc: 'Receive notifications about new tasks',
+      emailNotifications: 'Email notifications',
+      emailNotificationsDesc: 'Receive updates by email',
+      appearance: 'Appearance',
+      darkTheme: 'Dark theme',
+      darkThemeDesc: 'Switch to dark theme',
+      language: 'Language',
+      languageDesc: 'Choose interface language',
+      languageRu: 'Russian',
+      languageEn: 'English',
+      profileUpdated: '✅ Profile updated',
+      updateError: '❌ Update error',
+      saved: '✅ Saved',
+      saveError: '❌ Error',
+      editProfileTitle: 'Edit profile',
+      name: 'Name',
+      email: 'Email',
+      enterName: 'Enter name',
+      enterEmail: 'Enter email'
+    },
+    dashboard: {
+      tabTitles: {
+        home: 'Home',
+        boards: 'Boards',
+        files: 'Files',
+        presentations: 'Presentations',
+        settings: 'Settings',
+        admin: 'Admin panel',
+        ai: 'AI Assistant'
+      },
+      greetingNight: 'Good night',
+      greetingMorning: 'Good morning',
+      greetingDay: 'Good afternoon',
+      greetingEvening: 'Good evening',
+      subtitle: 'This is your control center. Here you can see your workspace overview.',
+      boardsCount: 'Boards',
+      tasksCount: 'Tasks',
+      filesCount: 'Files',
+      createBoard: 'Create board',
+      askAI: 'Ask AI',
+      uploadFile: 'Upload file',
+      whatCanDo: '🚀 What Daler AI Can Do',
+      whatCanDoDesc: 'Explore platform capabilities',
+      recentProjects: '📋 Your recent projects',
+      noDescription: 'No description',
+      createNewProject: 'Create new project',
+      tryAI: 'Try AI Assistant',
+      tryAIDesc: 'Generate a project, presentation, or ask any question — AI will help!',
+      try: 'Try now',
+      justNow: 'just now',
+      minAgo: 'min ago',
+      hoursAgo: 'h ago',
+      yesterday: 'yesterday'
+    },
+    boards: {
+      title: 'Boards',
+      loadError: 'Failed to load boards',
+      createError: 'Failed to create board',
+      deleteError: 'Failed to delete board',
+      createPlaceholder: 'New board name',
+      searchPlaceholder: 'Search boards by name',
+      loadingBoards: 'Loading boards...',
+      activeTasks: 'active tasks',
+      active: 'Active',
+      allBoards: 'All boards',
+      colName: 'Name',
+      colTasks: 'Tasks',
+      colStatus: 'Status',
+      colUpdated: 'Last updated',
+      colActions: 'Actions',
+      creating: 'Creating...',
+      confirmDelete: 'Delete board and all related tasks?'
+    },
+    files: {
+      title: 'Files',
+      loadError: 'Failed to load files',
+      uploadError: 'Failed to upload file',
+      deleteError: 'Failed to delete file',
+      uploading: 'Uploading...',
+      upload: 'Upload file',
+      searchPlaceholder: 'Search files by name',
+      loadingFiles: 'Loading files...',
+      allFiles: 'All files',
+      colName: 'Name',
+      colType: 'Type',
+      colSize: 'Size',
+      colDate: 'Upload date',
+      colActions: 'Actions',
+      open: 'Open',
+      confirmDelete: 'Delete file?'
+    },
+    ai: {
+      title: 'AI Assistant',
+      subtitle: 'Powered by Daler AI — ask anything',
+      chatMode: 'Chat with AI',
+      projectMode: 'Project generation',
+      describeProject: 'Describe your project',
+      describeProjectPlaceholder: 'For example: Build a food delivery mobile app with ordering, courier tracking and payments',
+      preferences: 'Additional preferences (optional)',
+      preferencesPlaceholder: 'For example: Timeline - 3 months, team of 5, limited budget',
+      generating: 'Generating...',
+      generateProject: 'Generate project',
+      tasks: 'Tasks',
+      recommendations: 'Recommendations',
+      days: 'days',
+      createThisProject: 'Create this project',
+      regenerate: 'Regenerate',
+      welcomeTitle: 'Hi! I am your AI assistant',
+      welcomeSubtitle: 'I can help with anything:',
+      cardCode: 'Write code',
+      cardPlan: 'Project plan',
+      cardTips: 'Tips',
+      cardLearn: 'Learning',
+      typing: 'typing...',
+      thinking: 'thinking...',
+      clearChat: 'Clear chat',
+      describeProjectError: 'Please describe your project',
+      projectGenerateError: 'Project generation error',
+      projectCreated: 'Project created successfully!',
+      projectCreateError: 'Project creation error',
+      userLabel: 'User',
+      chatGenericError: '⚠️ Something went wrong. Please try again.',
+      copy: 'Copy',
+      copied: 'Copied!',
+      prompts: {
+        code: 'Write a React navbar for me',
+        plan: 'Create a project plan for an online store',
+        tips: 'How can I optimize a React app?',
+        learn: 'Explain how async/await works'
+      },
+      priority: {
+        high: 'high',
+        medium: 'medium',
+        low: 'low'
+      }
+    },
+    presentations: {
+      title: 'Create presentation',
+      subtitle: 'AI will generate a professional presentation in seconds',
+      topic: 'Presentation topic',
+      topicPlaceholder: 'For example: Artificial intelligence in medicine',
+      theme: 'Design theme',
+      slidesCount: 'Number of slides',
+      generate: 'Create presentation',
+      generating: 'Generating...',
+      try: 'Try:',
+      setTopicError: 'Please enter a presentation topic',
+      generateError: 'Presentation generation error',
+      back: 'Back',
+      export: 'Export',
+      fullscreen: 'Fullscreen',
+      collapse: 'Collapse'
+    }
+  }
+};
+
+const LanguageContext = createContext();
+
+export const LanguageProvider = ({ children }) => {
+  const [language, setLanguageState] = useState(localStorage.getItem('language') || 'ru');
+
+  const setLanguage = useCallback((next) => {
+    const lang = next === 'en' ? 'en' : 'ru';
+    setLanguageState(lang);
+    localStorage.setItem('language', lang);
+    document.documentElement.lang = lang;
+  }, []);
+
+  const t = useCallback((path) => {
+    const parts = path.split('.');
+    let current = translations[language];
+    for (const part of parts) {
+      current = current?.[part];
+    }
+    if (typeof current === 'string') return current;
+    return path;
+  }, [language]);
+
+  const value = useMemo(() => ({ language, setLanguage, t }), [language, setLanguage, t]);
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
+};
+
+export const useLanguage = () => {
+  const ctx = useContext(LanguageContext);
+  if (!ctx) throw new Error('useLanguage must be used within LanguageProvider');
+  return ctx;
+};
