@@ -169,10 +169,10 @@ const translations = {
       copy: 'Копировать',
       copied: 'Скопировано!',
       prompts: {
-        code: 'Напиши мне навбар на React',
-        plan: 'Создай план проекта интернет-магазина',
-        tips: 'Как оптимизировать React приложение?',
-        learn: 'Объясни как работает async/await'
+        code: '',
+        plan: '',
+        tips: '',
+        learn: ''
       },
       priority: {
         high: 'высокий',

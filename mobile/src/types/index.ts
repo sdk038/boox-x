@@ -49,6 +49,7 @@ export interface GeneratedPresentation {
     id?: string;
     type?: string;
     title: string;
+    emoji?: string;
     content?: string;
     bullets?: string[];
   }>;

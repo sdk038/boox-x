@@ -4,13 +4,18 @@ import { aiAPI } from '../services/api';
 import { GeneratedPresentation } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 
-const STYLES = ['modern', 'dark', 'minimal'];
+const STYLES: { id: string; label: string }[] = [
+  { id: 'noir', label: 'Нуар' },
+  { id: 'papirus', label: 'Папирус' },
+  { id: 'neon', label: 'Неон' },
+  { id: 'mist', label: 'Туман' },
+];
 
 export default function AIPresentationsScreen() {
   const { t } = useLanguage();
   const [topic, setTopic] = useState('');
   const [slidesCount, setSlidesCount] = useState('8');
-  const [style, setStyle] = useState('modern');
+  const [style, setStyle] = useState('noir');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GeneratedPresentation | null>(null);
   const [source, setSource] = useState('');
@@ -63,11 +68,11 @@ export default function AIPresentationsScreen() {
         <View style={styles.stylesWrap}>
           {STYLES.map((variant) => (
             <Pressable
-              key={variant}
-              style={[styles.styleBtn, style === variant && styles.styleBtnActive]}
-              onPress={() => setStyle(variant)}
+              key={variant.id}
+              style={[styles.styleBtn, style === variant.id && styles.styleBtnActive]}
+              onPress={() => setStyle(variant.id)}
             >
-              <Text style={styles.styleText}>{variant}</Text>
+              <Text style={styles.styleText}>{variant.label}</Text>
             </Pressable>
           ))}
         </View>
@@ -84,7 +89,11 @@ export default function AIPresentationsScreen() {
           </Text>
           {result.slides?.map((slide, idx) => (
             <View key={slide.id || idx} style={styles.slideCard}>
-              <Text style={styles.slideTitle}>{idx + 1}. {slide.title}</Text>
+              <Text style={styles.slideMeta}>
+                {idx + 1}. {slide.emoji ? `${slide.emoji} ` : ''}
+                <Text style={styles.slideType}>{slide.type || 'slide'}</Text>
+              </Text>
+              <Text style={styles.slideTitle}>{slide.title}</Text>
               {slide.content ? <Text style={styles.slideContent}>{slide.content}</Text> : null}
               {slide.bullets?.map((bullet, bIdx) => (
                 <Text key={bIdx} style={styles.bullet}>• {bullet}</Text>
@@ -144,6 +153,8 @@ const styles = StyleSheet.create({
   resultTitle: { color: '#f2f4fb', fontWeight: '700', fontSize: 18 },
   resultMeta: { color: '#8f9ab8' },
   slideCard: { backgroundColor: '#1a2030', borderRadius: 10, padding: 10, gap: 4 },
+  slideMeta: { color: '#8f9ab8', fontSize: 12 },
+  slideType: { color: '#5ad4c4', fontSize: 12, textTransform: 'lowercase' as const },
   slideTitle: { color: '#eef3ff', fontWeight: '700' },
   slideContent: { color: '#b7c2dd' },
   bullet: { color: '#b7c2dd' },

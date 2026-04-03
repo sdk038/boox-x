@@ -38,7 +38,7 @@ export const aiAPI = {
     }),
   createProjectFromAI: (projectData: GeneratedProject) =>
     api.post<{ success: boolean; board: { _id: string; name: string } }>('/ai/create-project', { projectData }),
-  generatePresentation: (topic: string, slidesCount = 8, style = 'modern') =>
+  generatePresentation: (topic: string, slidesCount = 8, style = 'noir') =>
     api.post<{ success: boolean; source?: string; presentation: GeneratedPresentation }>(
       '/ai/generate-presentation',
       { topic, slidesCount, style },

@@ -802,9 +802,24 @@ const extractTopic = (raw) => {
 // @desc    Генерация презентации
 // @route   POST /api/ai/generate-presentation
 // @access  Public (optionalAuth)
+const PRESENTATION_STYLE_HINTS = {
+  noir: 'Тон текста: кинематографичный, минималистичный, сильные формулировки.',
+  papirus: 'Тон текста: тёплый академический, спокойный, структурированный.',
+  neon: 'Тон текста: tech, динамичный, короткие ударные фразы.',
+  boreal: 'Тон текста: природный, устойчивый, органичный.',
+  terracotta: 'Тон текста: тёплый человеческий, эмоциональный.',
+  mist: 'Тон текста: лёгкий, воздушный, лаконичный.',
+  modern: 'Тон текста: современный деловой, чёткий.',
+  nature: 'Тон текста: экологичный, природный.',
+  sunset: 'Тон текста: тёплый эмоциональный.',
+  ocean: 'Тон текста: спокойный технологичный.',
+  dark: 'Тон текста: строгий контрастный.',
+  minimal: 'Тон текста: светлый минималистичный.',
+};
+
 exports.generatePresentation = async (req, res) => {
   try {
-    const { topic: rawTopic, slidesCount = 8 } = req.body;
+    const { topic: rawTopic, slidesCount = 8, style = 'noir' } = req.body;
 
     if (!rawTopic) {
       return res.status(400).json({ success: false, message: 'Укажите тему презентации' });
@@ -813,14 +828,21 @@ exports.generatePresentation = async (req, res) => {
     const topic = extractTopic(rawTopic);
     const count = Math.min(Math.max(parseInt(slidesCount) || 8, 3), 20);
 
+    const sendDemo = () => {
+      let presentation = getDemoPresentationResponse(topic, count);
+      presentation = ensureSlideCount(presentation, count, topic);
+      return res.json({ success: true, presentation, source: 'demo' });
+    };
+
     if (!process.env.GEMINI_API_KEY) {
-      return res.status(503).json({
-        success: false,
-        message: 'AI временно недоступен: не настроен GEMINI_API_KEY'
-      });
+      console.warn('⚠️ GEMINI_API_KEY не задан — презентация из шаблонов (demo)');
+      return sendDemo();
     }
 
+    const styleLine = PRESENTATION_STYLE_HINTS[style] || PRESENTATION_STYLE_HINTS.noir;
+
     const prompt = `Создай презентацию на тему "${topic}" из ровно ${count} слайдов.
+${styleLine}
 Используй РЕАЛЬНЫЕ и АКТУАЛЬНЫЕ данные (факты, цифры, даты, имена) из поиска.
 Для каждого контентного слайда добавь поле "sources" (массив из 1-2 URL).
 
@@ -853,34 +875,37 @@ exports.generatePresentation = async (req, res) => {
     if (!aiResult.success) {
       const msg = String(aiResult.error || '').toLowerCase();
       if (msg.includes('quota') || msg.includes('429') || msg.includes('rate')) {
-        return res.status(429).json({
-          success: false,
-          message: 'Лимит AI запросов исчерпан. Попробуйте позже или обновите тариф/ключ.'
-        });
+        console.warn('⚠️ Лимит AI — презентация из шаблонов (demo)');
+        return sendDemo();
       }
-      return res.status(503).json({
-        success: false,
-        message: 'AI временно недоступен. Повторите попытку через минуту.'
-      });
+      console.warn('⚠️ AI недоступен для презентации — demo:', aiResult.error);
+      return sendDemo();
     }
 
     let presentation = parseJsonResponse(aiResult.text);
     if (!presentation || !presentation.slides || presentation.slides.length === 0) {
-      return res.status(502).json({
-        success: false,
-        message: 'AI вернул некорректный ответ. Попробуйте сформулировать тему короче.'
-      });
+      console.warn('⚠️ AI вернул пустой JSON — презентация из шаблонов (demo)');
+      return sendDemo();
     }
 
     presentation = ensureSlideCount(presentation, count, topic);
     return res.json({ success: true, presentation, source: 'gemini-search' });
   } catch (error) {
     console.error('❌ Критическая ошибка генерации презентации:', error.message);
-    return res.status(500).json({
-      success: false,
-      message: 'Внутренняя ошибка генерации презентации',
-      error: error.message
-    });
+    try {
+      const rawTopic = req.body?.topic;
+      if (!rawTopic) throw error;
+      const topic = extractTopic(rawTopic);
+      const count = Math.min(Math.max(parseInt(req.body?.slidesCount) || 8, 3), 20);
+      let presentation = ensureSlideCount(getDemoPresentationResponse(topic, count), count, topic);
+      return res.json({ success: true, presentation, source: 'demo' });
+    } catch {
+      return res.status(500).json({
+        success: false,
+        message: 'Внутренняя ошибка генерации презентации',
+        error: error.message
+      });
+    }
   }
 };
 

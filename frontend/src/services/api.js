@@ -117,7 +117,7 @@ export const aiAPI = {
     api.post('/ai/analyze-project', { boardId }),
   chat: (message, context = null) => 
     api.post('/ai/chat', { message, context }),
-  generatePresentation: (topic, slidesCount = 8, style = 'modern') =>
+  generatePresentation: (topic, slidesCount = 8, style = 'noir') =>
     api.post('/ai/generate-presentation', { topic, slidesCount, style }, { timeout: 90000 })
 };
 
